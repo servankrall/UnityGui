@@ -12,13 +12,21 @@ ready-to-open project and can **auto-open it in the engine** for you.
   the same window; pick the engine per chat.
 - **Chats** — every game is a conversation. Keep chatting to **refine** it
   (“make it faster”, “add enemies”, “change to night time”) and the whole game
-  is regenerated in place. Conversations are saved in the sidebar.
+  is regenerated in place. Conversations are saved in the sidebar; double-click a
+  chat to rename it.
+- **Genre quick-starts** — one-tap starter prompts tailored to the engine
+  (Unity: platformer, shooter, tower defense…; Roblox: obby, tycoon, simulator…).
+- **✨ Enhance** — expand a one-line idea into a detailed, buildable brief before
+  generating.
+- **In-app code view** — expand any generated file to read the source, with a
+  one-click **copy** button. Choose generation **Length** (Standard / Long / Max).
+- **🔁 Regenerate** — re-roll the latest result from the same prompt.
 - **Fully automatic** — turn on **Auto-open when done** and the app writes the
   project and opens it in Unity / Roblox Studio the moment generation finishes.
   You write the prompt; it does the rest.
-- **Fixed models** — Gemini now uses current model ids (`gemini-2.5-flash`, …);
-  the retired `1.5` ids that produced *“these models are no longer usable”*
-  errors are gone.
+- **Self-healing models** — Gemini uses current model ids (`gemini-2.5-flash`, …),
+  and if a model is ever retired the app **automatically falls back** to another
+  working model — the *“these models are no longer usable”* error can't strand you.
 
 ### Free providers
 
@@ -60,19 +68,26 @@ Requires Node 18+.
 cd desktop
 npm install
 npm start        # run the app in dev
+npm test         # run the unit tests (no Electron / network needed)
 npm run dist     # build the Windows installer into desktop/dist/
 ```
 
 The Windows `.exe` is also built automatically by
 [`.github/workflows/release-desktop.yml`](../.github/workflows/release-desktop.yml):
-push a tag like `v1.0.2` (or run the workflow manually) and the installer is
+push a tag like `v1.0.3` (or run the workflow manually) and the installer is
 published to Releases.
 
 ```
 desktop/
-├── main.js               # Electron main: free-provider LLM calls + Unity & Roblox project writers
+├── main.js               # Electron main: config, conversations, IPC wiring
 ├── preload.js            # safe IPC bridge
+├── lib/
+│   ├── providers.js      # free providers (Gemini / Groq / Ollama) + engines
+│   ├── prompts.js        # system/refine/enhance prompts + genre quick-starts
+│   ├── llm.js            # LLM calls, model auto-fallback, JSON parse/repair
+│   └── writers.js        # Unity & Roblox project writers + .rbxlx builder
 ├── renderer/             # UI (index.html, style.css, app.js) — connect + chats + generator
+├── test/test.js          # unit tests (npm test)
 ├── assets/icon.png       # app icon
 └── package.json          # electron + electron-builder (one-click NSIS installer)
 ```

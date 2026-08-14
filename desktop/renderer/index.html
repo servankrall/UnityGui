@@ -64,6 +64,14 @@
               <option value="3d">3D</option>
             </select>
           </div>
+          <div>
+            <label for="length">Length</label>
+            <select id="length">
+              <option value="16000">Standard</option>
+              <option value="24000">Long</option>
+              <option value="32000">Max</option>
+            </select>
+          </div>
           <div class="autoopen">
             <label class="chkline"><input type="checkbox" id="auto-open" /> Auto-open when done</label>
           </div>
@@ -72,9 +80,11 @@
         <div class="turns" id="turns"></div>
 
         <div class="composer">
+          <div class="genres" id="genres"></div>
           <textarea id="prompt" placeholder="Describe your game… (e.g. a 2D runner where a cube jumps over obstacles, space to jump)"></textarea>
           <div class="composer-row">
-            <div class="chips" id="ideas"></div>
+            <button class="btn btn-ghost" id="enhance-btn" title="Expand your idea into a detailed brief">✨ Enhance</button>
+            <div class="spacer"></div>
             <button class="btn btn-primary" id="generate-btn">✦ Generate</button>
           </div>
           <div class="status" id="gen-status"></div>

@@ -11,7 +11,9 @@ contextBridge.exposeInMainWorld("api", {
   listConvos: () => ipcRenderer.invoke("convos:list"),
   getConvo: (id) => ipcRenderer.invoke("convos:get", id),
   deleteConvo: (id) => ipcRenderer.invoke("convos:delete", id),
+  renameConvo: (id, title) => ipcRenderer.invoke("convos:rename", { id, title }),
 
+  enhancePrompt: (idea, engine) => ipcRenderer.invoke("prompt:enhance", { idea, engine }),
   generate: (payload) => ipcRenderer.invoke("generate", payload),
   pickFolder: () => ipcRenderer.invoke("dialog:pickFolder"),
   saveProject: (payload) => ipcRenderer.invoke("project:save", payload),
