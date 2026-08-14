@@ -1,0 +1,58 @@
+name: Build desktop app (.exe)
+
+# Builds the UnityGUI Windows installer and publishes it to a GitHub Release.
+#   • Push a tag like v1.0.0            → builds + publishes a release for that tag.
+#   • Or run manually (Actions ▸ this workflow ▸ "Run workflow") and pass a tag.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write   # needed to create the Release and upload the .exe
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+
+      - name: Build Windows installer
+        working-directory: desktop
+        run: npm run dist
+        env:
+          # Unsigned build (no code-signing certificate). Windows SmartScreen may warn.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnityGUI-Windows
+          path: desktop/dist/*.exe
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: UnityGUI ${{ github.event.inputs.tag || github.ref_name }}
+          body: |
+            **UnityGUI desktop app** — generate Unity games from a prompt.
+
+            Download `UnityGUI-Setup-*.exe` below, run it (one-click install), paste your
+            Anthropic API key, describe a game, and save it as a ready-to-open Unity project.
+          files: desktop/dist/*.exe
+          draft: false
+          prerelease: false

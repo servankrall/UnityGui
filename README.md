@@ -7,19 +7,34 @@
 Describe a game → Claude writes ready-to-run C# into your project → press Play.
 
 A Unity-focused take on the [ForgeGUI](https://forgegui.com) "describe-to-generate" concept,
-rebuilt as a **Unity Editor plugin** that produces runnable games (powered by the Claude API),
-plus a companion marketing site and sign-in console.
+powered by the Claude API. Use it however you like: a **one-click desktop app**, a **Unity
+Editor plugin**, or the **companion website**.
 
 </div>
 
 ---
 
-## Two parts
+## Three ways to use it
 
 | | What it is | Where |
 |---|---|---|
-| 🎮 **Unity Editor plugin** | The product. A `Window ▸ UnityGUI` tool that turns a prompt into a complete, self-bootstrapping Unity game (C#), via the Claude API. | [`unity/UnityGUI/`](./unity/UnityGUI/) |
-| 🌐 **Companion website** | Landing page + Google sign-in **console** (setup & download hub) for the plugin. Static, no build step. | repo root (`index.html`, `studio.html`) |
+| 🖥️ **Desktop app (.exe)** | The easy path. Download from **Releases**, connect your key once, prompt → generate → save a ready-to-open Unity project. No repo, no plugin, no site. | [`desktop/`](./desktop/) · [Releases](https://github.com/servankrall/UnityGui/releases) |
+| 🎮 **Unity Editor plugin** | The most powerful path. `Window ▸ UnityGUI` generates a real `.unity` scene + prefabs + art **inside** your project. | [`unity/UnityGUI/`](./unity/UnityGUI/) |
+| 🌐 **Companion website** | Landing page + Google sign-in **console** (setup hub). Static, no build step. | repo root (`index.html`, `studio.html`) |
+
+## 🖥️ The desktop app
+
+The simplest way in — a Windows `.exe` you download from
+[**Releases**](https://github.com/servankrall/UnityGui/releases). One-click install,
+paste your Anthropic API key once, describe a game, and click **Save as Unity project**;
+open the folder in Unity Hub and press Play.
+
+- **Electron app** (`desktop/`) — the Claude **Messages API** is called in the main
+  process (no CORS, key never leaves your machine).
+- **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
+  push a tag like `v1.0.0` (or run the workflow) and the installer is published to Releases.
+
+Details: [`desktop/README.md`](./desktop/README.md).
 
 ## 🎮 The Unity plugin
 

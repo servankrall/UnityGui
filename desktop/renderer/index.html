@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'" />
+  <title>UnityGUI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span>Unity<span>GUI</span></div>
+    <div class="spacer"></div>
+    <div class="chip off" id="conn-chip"><span class="live"></span><span id="conn-text">Not connected</span></div>
+    <button class="link hidden" id="disconnect-btn">Disconnect</button>
+  </div>
+
+  <div class="wrap">
+    <!-- CONNECT SCREEN -->
+    <div class="center" id="connect-view">
+      <div class="card">
+        <span class="badge">● One-click setup</span>
+        <h1>Connect to Claude</h1>
+        <p class="sub">Paste your Anthropic API key once. It's stored only on this computer and used to generate your games.</p>
+
+        <label for="key">Anthropic API key</label>
+        <input id="key" type="password" placeholder="sk-ant-..." autocomplete="off" />
+        <div class="hint">No key yet? Get one at console.anthropic.com/settings/keys</div>
+
+        <label class="mt2" for="c-model">Model</label>
+        <select id="c-model">
+          <option value="claude-opus-5">claude-opus-5 — most capable</option>
+          <option value="claude-sonnet-5">claude-sonnet-5 — faster</option>
+          <option value="claude-haiku-4-5">claude-haiku-4-5 — cheapest</option>
+        </select>
+
+        <button class="btn btn-primary btn-block btn-lg mt2" id="connect-btn">Connect</button>
+        <button class="link mt" id="get-key-btn" style="background:none;border:0;color:var(--violet2);cursor:pointer;font-size:.85rem;width:100%">Open the Anthropic console →</button>
+        <div class="status" id="connect-status"></div>
+      </div>
+    </div>
+
+    <!-- GENERATOR SCREEN -->
+    <div class="app hidden" id="app-view">
+      <div class="panel">
+        <div class="field">
+          <label for="prompt">Describe your game</label>
+          <textarea id="prompt" placeholder="e.g. A 2D endless runner where a cube jumps over obstacles. Space to jump, score for distance."></textarea>
+        </div>
+        <div class="field">
+          <label>Need an idea?</label>
+          <div class="chips" id="ideas"></div>
+        </div>
+        <div class="field">
+          <div class="row">
+            <div>
+              <label for="model">Model</label>
+              <select id="model">
+                <option value="claude-opus-5">opus-5</option>
+                <option value="claude-sonnet-5">sonnet-5</option>
+                <option value="claude-haiku-4-5">haiku-4-5</option>
+              </select>
+            </div>
+            <div>
+              <label for="style">Style</label>
+              <select id="style">
+                <option value="auto">Auto</option>
+                <option value="2d">2D</option>
+                <option value="3d">3D</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" id="generate-btn">✦ Generate game</button>
+        <div class="status" id="gen-status"></div>
+      </div>
+
+      <div class="panel">
+        <div class="result" id="result">
+          <div class="empty" id="empty">
+            <div class="art">🎮</div>
+            <h2>Your game appears here</h2>
+            <p class="sub">Describe a game and press Generate. Then save it as a ready-to-open Unity project.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
