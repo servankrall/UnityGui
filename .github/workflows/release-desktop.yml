@@ -1,7 +1,7 @@
 name: Build desktop app (.exe)
 
 # Builds the UnityGUI Windows installer and publishes it to a GitHub Release.
-#   • Push a tag like v1.0.0            → builds + publishes a release for that tag.
+#   • Push a tag like v1.0.2            → builds + publishes a release for that tag.
 #   • Or run manually (Actions ▸ this workflow ▸ "Run workflow") and pass a tag.
 on:
   push:
@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.0)"
+        description: "Release tag to publish (e.g. v1.0.2)"
         required: true
-        default: "v1.0.0"
+        default: "v1.0.2"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -49,11 +49,17 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: UnityGUI ${{ github.event.inputs.tag || github.ref_name }}
           body: |
-            **UnityGUI desktop app** — generate Unity games from a prompt, for free.
+            **UnityGUI desktop app** — generate complete **Unity _and_ Roblox Studio** games
+            from a prompt, for free.
 
-            Download `UnityGUI-Setup-*.exe` below, run it (one-click install), connect a free
-            AI provider (Gemini / Groq / Ollama), describe a game, and save it as a ready-to-open
-            Unity project.
+            Download `UnityGUI-Setup-*.exe` below and run it (one-click install). Connect a free
+            AI provider (Gemini / Groq / Ollama), pick an engine, and describe a game — with
+            **Auto-open** on it writes the project and opens it in the engine for you. Keep
+            **chatting** to refine the game. You just press Play.
+
+            - **Two engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file
+            - **Chats + refine, auto-open, 100% free** (no paid Claude key)
+            - Fixed the Gemini *"models no longer usable"* error (now uses current model ids)
           files: desktop/dist/*.exe
           draft: false
           prerelease: false
