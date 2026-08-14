@@ -22,7 +22,7 @@ namespace UnityGUI.EditorTools
         {
             switch (p)
             {
-                case LLMProvider.Gemini: return new[] { "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro" };
+                case LLMProvider.Gemini: return new[] { "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-flash-lite", "gemini-flash-latest" };
                 case LLMProvider.Groq:   return new[] { "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "openai/gpt-oss-120b" };
                 default:                 return new[] { "qwen2.5-coder:7b", "llama3.1:8b", "codellama:13b" };
             }

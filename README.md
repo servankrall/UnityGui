@@ -2,13 +2,14 @@
 
 # UnityGUI
 
-**Generate playable Unity games from a prompt — right inside the Editor.**
+**Generate complete, playable Unity _and_ Roblox Studio games from a prompt.**
 
-Describe a game → Claude writes ready-to-run C# into your project → press Play.
+Describe a game → free AI writes a ready-to-run project → the app opens it in the engine → press Play.
 
-A Unity-focused take on the [ForgeGUI](https://forgegui.com) "describe-to-generate" concept,
-powered by free AI (Gemini / Groq / Ollama — no paid key). Use it however you like: a **one-click desktop app**, a **Unity
-Editor plugin**, or the **companion website**.
+A take on the [ForgeGUI](https://forgegui.com) "describe-to-generate" concept for **game engines**,
+powered by free AI (Gemini / Groq / Ollama — no paid key). Pick your engine, chat to refine, and let
+it do everything. Use it however you like: a **one-click desktop app**, a **Unity Editor plugin**, or
+the **companion website**.
 
 </div>
 
@@ -18,7 +19,7 @@ Editor plugin**, or the **companion website**.
 
 | | What it is | Where |
 |---|---|---|
-| 🖥️ **Desktop app (.exe)** | The easy path. Download from **Releases**, connect your key once, prompt → generate → save a ready-to-open Unity project. No repo, no plugin, no site. | [`desktop/`](./desktop/) · [Releases](https://github.com/servankrall/UnityGui/releases) |
+| 🖥️ **Desktop app (.exe)** | The easy path. Download from **Releases**, connect a free key once, then prompt → generate → it **auto-opens** a ready-to-run **Unity _or_ Roblox** project. Chat to refine. No repo, no plugin, no site. | [`desktop/`](./desktop/) · [Releases](https://github.com/servankrall/UnityGui/releases) |
 | 🎮 **Unity Editor plugin** | The most powerful path. `Window ▸ UnityGUI` generates a real `.unity` scene + prefabs + art **inside** your project. | [`unity/UnityGUI/`](./unity/UnityGUI/) |
 | 🌐 **Companion website** | Landing page + Google sign-in **console** (setup hub). Static, no build step. | repo root (`index.html`, `studio.html`) |
 
@@ -26,15 +27,22 @@ Editor plugin**, or the **companion website**.
 
 The simplest way in — a Windows `.exe` you download from
 [**Releases**](https://github.com/servankrall/UnityGui/releases). One-click install,
-connect a **free** AI provider, describe a game, and click **Save as Unity project**;
-open the folder in Unity Hub and press Play.
+connect a **free** AI provider, pick an engine, describe a game — and with **Auto-open**
+on it writes the project and opens it in the engine for you. You just press Play.
 
+- **Two engines** — generate for **Unity (C#)** or **Roblox Studio (Luau)**. Unity
+  gets a full project; Roblox gets a ready-to-open `.rbxlx` place file.
+- **Chats + refine** — every game is a saved conversation; keep chatting
+  (“make it faster”, “add enemies”) and the whole game regenerates in place.
+- **Fully automatic** — **Auto-open when done** writes and launches the project the
+  moment generation finishes. Write the prompt; it does the rest.
 - **Free — no paid Claude key** — runs on **Google Gemini** (free tier, no credit card),
-  **Groq** (free), or **Ollama** (100% local/offline, no key).
+  **Groq** (free), or **Ollama** (100% local/offline, no key). Uses current model ids
+  (the retired Gemini `1.5` ids that broke with *“models no longer usable”* are gone).
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your key never leaves your machine).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.0` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.2` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 
@@ -113,7 +121,8 @@ python3 -m http.server 8080
 ## Notes
 
 UnityGUI is an independent, educational project and is **not affiliated with Unity Technologies,
-Google, Groq, Ollama, or ForgeGUI**. "Unity", "uGUI", "URP" and "HDRP" are referenced descriptively.
+Roblox Corporation, Google, Groq, Ollama, or ForgeGUI**. "Unity", "Roblox", "Roblox Studio",
+"Luau", "uGUI", "URP" and "HDRP" are referenced descriptively.
 
 ## License
 
