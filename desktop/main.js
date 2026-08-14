@@ -195,6 +195,47 @@ ipcMain.handle("project:zip", (_e, { engine, data, dir }) => {
     return { ok: true, zipPath, root: s.root };
   } catch (e) { return { ok: false, error: e.message }; }
 });
+ipcMain.handle("project:zipDir", (_e, dir) => {
+  try { return { ok: true, zipPath: zip.zipDir(dir) }; }
+  catch (e) { return { ok: false, error: e.message }; }
+});
 ipcMain.handle("shell:open", (_e, p) => shell.openPath(p));
 ipcMain.handle("shell:reveal", (_e, p) => shell.showItemInFolder(p));
 ipcMain.handle("shell:openExternal", (_e, url) => shell.openExternal(url));
+
+// In-app playable preview (Web games): open the HTML in an isolated window.
+ipcMain.handle("preview:open", (_e, filePath) => {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "Nothing to preview yet." };
+    const win = new BrowserWindow({
+      width: 900, height: 680, backgroundColor: "#0a0d14", title: "UnityGUI — Preview",
+      webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true },
+    });
+    win.setMenuBarVisibility(false);
+    win.loadFile(filePath);
+    return { ok: true };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
+// Project library: list the games written under the default output folder.
+ipcMain.handle("projects:list", () => {
+  const base = DEFAULT_OUT();
+  let names = [];
+  try { names = fs.readdirSync(base); } catch { return []; }
+  const out = [];
+  for (const name of names) {
+    const full = path.join(base, name);
+    let st; try { st = fs.statSync(full); } catch { continue; }
+    if (!st.isDirectory()) continue;
+    let engine = "unity", openTarget = full;
+    if (name.startsWith("Roblox-")) {
+      engine = "roblox";
+      try { const f = fs.readdirSync(full).find(x => x.endsWith(".rbxlx")); if (f) openTarget = path.join(full, f); } catch {}
+    } else if (name.startsWith("Web-")) {
+      engine = "web"; openTarget = path.join(full, "index.html");
+    }
+    out.push({ name, path: full, engine, openTarget, mtime: st.mtimeMs });
+  }
+  out.sort((a, b) => b.mtime - a.mtime);
+  return out;
+});

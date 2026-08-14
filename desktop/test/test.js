@@ -22,13 +22,13 @@ test("providers: gemini uses current (non-1.5) models", () => {
   assert.strictEqual(PROVIDERS.gemini.defaultModel, "gemini-2.5-flash");
   for (const m of PROVIDERS.gemini.models) assert.ok(!/1\.5/.test(m), "no retired 1.5 model: " + m);
 });
-test("engines: unity + roblox present", () => {
-  assert.deepStrictEqual(Object.keys(ENGINES).sort(), ["roblox", "unity"]);
+test("engines: unity + roblox + web present", () => {
+  assert.deepStrictEqual(Object.keys(ENGINES).sort(), ["roblox", "unity", "web"]);
 });
 
 // ---- genres ----------------------------------------------------------------
-test("genres: both engines have non-empty starter prompts", () => {
-  for (const eng of ["unity", "roblox"]) {
+test("genres: all engines have non-empty starter prompts", () => {
+  for (const eng of ["unity", "roblox", "web"]) {
     const list = prompts.genresFor(eng);
     assert.ok(Array.isArray(list) && list.length >= 4, eng + " has genres");
     for (const g of list) {
@@ -50,6 +50,13 @@ test("prompt: roblox system prompt asks for Luau + services", () => {
   assert.ok(/Luau/.test(p));
   assert.ok(/GetService/.test(p));
   assert.ok(/Make a 2D game/.test(p));
+});
+test("prompt: web system prompt asks for one self-contained index.html", () => {
+  const p = prompts.buildSystemPrompt("web", "auto");
+  assert.ok(/index\.html/.test(p));
+  assert.ok(/canvas/i.test(p));
+  assert.ok(/Web Audio|AudioContext/.test(p), "asks for procedural sound");
+  assert.ok(/no external|no CDN|self-contained/i.test(p));
 });
 test("prompt: refine embeds instruction + previous file contents", () => {
   const prev = { files: [{ name: "Main", content: "print('hi')" }] };
@@ -145,6 +152,24 @@ test("buildRbxlx: escapes the ]]> CDATA edge case and stays well-formed", () => 
 
 test("xmlEsc: escapes &, <, > in names", () => {
   assert.strictEqual(writers.xmlEsc('a & b < c > d'), "a &amp; b &lt; c &gt; d");
+});
+
+// ---- Web writer ------------------------------------------------------------
+test("writeWebProject: writes index.html and opens it", () => {
+  const dir = mkTmp();
+  const html = "<!doctype html><canvas></canvas><script>/* game */</script>";
+  const out = writers.writeWebProject(dir, { game_name: "Canvas Runner", files: [{ path: "index.html", content: html }] });
+  assert.ok(out.openTarget.endsWith("index.html"), "opens index.html");
+  assert.strictEqual(fs.readFileSync(out.openTarget, "utf8"), html);
+  assert.ok(out.root.includes("Web-CanvasRunner"));
+  assert.ok(fs.existsSync(path.join(out.root, "HOW-TO-PLAY.txt")));
+});
+test("writeWebProject: blocks path traversal and always leaves something openable", () => {
+  const dir = mkTmp();
+  const out = writers.writeWebProject(dir, { game_name: "Edge", files: [{ path: "../../evil.html", content: "x" }] });
+  const rootResolved = path.resolve(out.root);
+  assert.ok(path.resolve(out.openTarget).startsWith(rootResolved), "open target stays inside the project");
+  assert.ok(fs.existsSync(out.openTarget), "an index.html exists");
 });
 
 // ---- callLLM model fallback (mock fetch) -----------------------------------

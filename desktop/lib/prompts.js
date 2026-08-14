@@ -28,6 +28,18 @@ const GENRES = {
     { id: "rhythm", label: "Rhythm", icon: "🎵", prompt: "A rhythm game: notes fall down four lanes to a beat, press D/F/J/K to hit them on time. Combo counter, accuracy, and score." },
     { id: "idle", label: "Idle clicker", icon: "🍪", prompt: "An idle/incremental clicker: click the big button to earn points, buy auto-generators that earn points per second, and watch upgrades stack." },
   ],
+  web: [
+    { id: "platformer", label: "Platformer", icon: "🏃", prompt: "A 2D canvas platformer: run and jump across platforms, collect coins, avoid spikes, reach the flag. Arrow keys + space, score and lives." },
+    { id: "shooter", label: "Space shooter", icon: "🚀", prompt: "A vertical space shooter on canvas: move a ship with arrows, space to fire at descending enemy waves, dodge bullets. Lives and score." },
+    { id: "snake", label: "Snake", icon: "🐍", prompt: "Classic snake on a grid canvas: eat food to grow, don't hit walls or yourself. Arrow keys, score and speed-up, restart on death." },
+    { id: "breakout", label: "Breakout", icon: "🧱", prompt: "A breakout/brick-breaker on canvas: mouse-move the paddle to bounce the ball and clear rows of bricks. Lives, score, win screen." },
+    { id: "flappy", label: "Flappy", icon: "🐤", prompt: "A flappy clone on canvas: click/space to flap between pipe gaps. Score per pipe, restart on crash, day/night background." },
+    { id: "runner", label: "Runner", icon: "🌀", prompt: "A side-scrolling endless runner on canvas: auto-run, jump over and slide under obstacles. Distance score, speeds up, restart on hit." },
+    { id: "pong", label: "Pong", icon: "🏓", prompt: "A pong game on canvas: player paddle vs a simple AI paddle, ball bounces and speeds up, first to 5 points wins. W/S or mouse." },
+    { id: "memory", label: "Memory match", icon: "🃏", prompt: "A memory card-matching game on canvas/DOM: flip cards to find pairs, moves and timer, win when all pairs are found." },
+    { id: "tetris", label: "Blocks", icon: "🟦", prompt: "A falling-blocks puzzle on canvas: rotate and move tetromino pieces to clear full lines. Arrow keys, level, score and next-piece." },
+    { id: "clicker", label: "Clicker", icon: "🍪", prompt: "An incremental clicker (DOM/canvas): click to earn points, buy auto-generators and upgrades that boost points-per-second." },
+  ],
   roblox: [
     { id: "obby", label: "Obby", icon: "🧗", prompt: "An obby: jump across floating platforms with moving parts and kill-bricks to reach the winner pad at the end. Checkpoints along the way." },
     { id: "tycoon", label: "Tycoon", icon: "🏭", prompt: "A simple tycoon: buy droppers that generate cash, collect it from a conveyor, and buy upgrades. Leaderstats with Cash." },
@@ -53,6 +65,24 @@ function genresFor(engine) {
 }
 
 function buildSystemPrompt(engine, style) {
+  if (engine === "web") {
+    return `You are an expert HTML5 game developer. From the user's description you generate a COMPLETE, PLAYABLE browser game as ONE self-contained HTML file that runs by simply opening it — no server, no build, no external files or CDNs.
+
+RULES
+- A single index.html with ALL CSS and JavaScript inline. Vanilla JS only (no frameworks, no external <script src>, no CDN links, no imported assets/fonts/images).
+- Render with an HTML5 <canvas> (or DOM for card/clicker games) sized to the window; a requestAnimationFrame game loop; keyboard/mouse/touch input.
+- ${styleLine(style)}
+- PROCEDURAL ART: draw ALL graphics in code (canvas shapes, gradients, paths) — no image files. Give it real visual polish (colors, gradients, simple particles/animation).
+- PROCEDURAL SOUND: synthesize sound effects with the Web Audio API (AudioContext oscillators/gain) — short beeps/blips for actions, and start audio on first user interaction. No audio files.
+- Include a start screen and a game-over/restart, an on-screen score/lives HUD, and win/lose logic. Complete, valid, runnable code — no TODOs or placeholders.
+
+OUTPUT — respond with ONLY a single JSON object, no markdown or code fences, with EXACTLY these keys:
+  "game_name": string,
+  "summary": string,
+  "setup_notes": string (how to play),
+  "files": array with a SINGLE object { "path": "index.html", "content": string (the full HTML document) }
+Do not include XML tags such as <thinking>.`;
+  }
   if (engine === "roblox") {
     return `You are an expert Roblox game engineer. From the user's description you generate a COMPLETE, PLAYABLE Roblox experience as Luau scripts.
 

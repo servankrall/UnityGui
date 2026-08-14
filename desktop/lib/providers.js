@@ -31,6 +31,6 @@ const PROVIDERS = {
   },
 };
 
-const ENGINES = { unity: "Unity (C#)", roblox: "Roblox Studio (Luau)" };
+const ENGINES = { unity: "Unity (C#)", roblox: "Roblox Studio (Luau)", web: "Web (HTML5/JS)" };
 
 module.exports = { PROVIDERS, ENGINES };

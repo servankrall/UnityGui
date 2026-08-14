@@ -12,7 +12,36 @@ function sanitize(name) {
 
 function writeProject(engine, baseDir, data) {
   fs.mkdirSync(baseDir, { recursive: true });
-  return engine === "roblox" ? writeRobloxPlace(baseDir, data) : writeUnityProject(baseDir, data);
+  if (engine === "roblox") return writeRobloxPlace(baseDir, data);
+  if (engine === "web") return writeWebProject(baseDir, data);
+  return writeUnityProject(baseDir, data);
+}
+
+function writeWebProject(baseDir, data) {
+  const projName = sanitize(data.game_name);
+  const root = path.join(baseDir, "Web-" + projName);
+  fs.mkdirSync(root, { recursive: true });
+  const rootResolved = path.resolve(root);
+  let indexPath = null;
+  let written = 0;
+  for (const f of data.files || []) {
+    if (!f || f.content == null) continue;
+    let rel = String(f.path || f.name || "index.html").replace(/\\/g, "/").replace(/^\/+/, "");
+    if (!/\.[a-z0-9]+$/i.test(rel)) rel += ".html";
+    const target = path.resolve(path.join(root, rel));
+    if (!target.startsWith(rootResolved)) continue; // path-traversal guard
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, f.content, "utf8");
+    written++;
+    if (!indexPath && /(^|\/)index\.html$/i.test(rel)) indexPath = target;
+    if (!indexPath && /\.html?$/i.test(rel)) indexPath = target; // first html as fallback
+  }
+  if (!indexPath) { // ensure something is openable
+    indexPath = path.join(root, "index.html");
+    fs.writeFileSync(indexPath, `<!doctype html><meta charset="utf8"><title>${xmlEsc(data.game_name || "Game")}</title><p>No index.html was generated.</p>`, "utf8");
+  }
+  fs.writeFileSync(path.join(root, "HOW-TO-PLAY.txt"), `${data.game_name}\n\nJust double-click index.html to play in your browser — no engine, no install needed.\n${data.setup_notes ? "\n" + data.setup_notes + "\n" : ""}`, "utf8");
+  return { root, openTarget: indexPath, written };
 }
 
 function writeUnityProject(baseDir, data) {
@@ -125,6 +154,6 @@ ${service("Players")}
 }
 
 module.exports = {
-  sanitize, writeProject, writeUnityProject, writeRobloxPlace,
+  sanitize, writeProject, writeUnityProject, writeRobloxPlace, writeWebProject,
   buildRbxlx, cdata, xmlEsc,
 };
