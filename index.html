@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UnityGUI — The #1 AI Platform for Unity Developers</title>
+  <meta name="description" content="Describe it, generate it, drop it into Unity. UnityGUI turns text prompts into game-ready UI kits, icons, sprites, 3D props, textures and more — built for Unity's uGUI, UI Toolkit, URP & HDRP." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/landing.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <header class="nav">
+    <div class="container">
+      <a class="nav-logo" href="index.html" aria-label="UnityGUI home">
+        <img src="assets/logo.svg" alt="UnityGUI" />
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#assets">Asset types</a>
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#showcase">Showcase</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-ghost btn-sm" href="studio.html">Sign in</a>
+        <a class="btn btn-primary btn-sm" href="studio.html">Launch Studio →</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="container">
+      <span class="badge badge-dot">AI asset generation for Unity</span>
+      <h1>Describe it. Generate it.<br /><span class="gradient-text">Ship it in Unity.</span></h1>
+      <p class="lead">
+        UnityGUI turns a single sentence into game-ready UI kits, icons, sprites, 3D props,
+        textures and skyboxes — exported in the exact formats Unity expects. No design skills required.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="studio.html">Start generating — free</a>
+        <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+      </div>
+      <p class="hero-note">No credit card · 25 free generations · uGUI, UI Toolkit, URP &amp; HDRP</p>
+
+      <!-- prompt demo -->
+      <div class="prompt-demo">
+        <span class="pd-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+        </span>
+        <span class="pd-text" id="pd-text"></span>
+        <select aria-label="Asset type" disabled>
+          <option>UI Kit</option>
+        </select>
+        <a class="btn btn-ember btn-sm" href="studio.html">Generate</a>
+      </div>
+
+      <!-- floating preview thumbs -->
+      <div class="hero-strip">
+        <div class="hero-strip-track" id="hero-strip"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats">
+    <div class="container">
+      <div class="stat"><div class="num gradient-text">8</div><div class="lbl">Unity asset types</div></div>
+      <div class="stat"><div class="num gradient-text">~6s</div><div class="lbl">Avg. generation time</div></div>
+      <div class="stat"><div class="num gradient-text">4K</div><div class="lbl">Max export resolution</div></div>
+      <div class="stat"><div class="num gradient-text">100%</div><div class="lbl">Unity-ready formats</div></div>
+    </div>
+  </section>
+
+  <!-- ASSET TYPES -->
+  <section class="section" id="assets">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Everything a Unity game needs</span>
+        <h2>One prompt, eight kinds of asset</h2>
+        <p>From HUDs to skyboxes — every result exports in a format that imports straight into your Unity project.</p>
+      </div>
+      <div class="asset-grid" id="asset-grid"></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how" style="background:var(--bg-elev);border-block:1px solid var(--border-soft)">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Describe → Generate → Import</span>
+        <h2>From idea to Unity in three steps</h2>
+      </div>
+      <div class="steps">
+        <div class="step card reveal">
+          <div class="step-n">1</div>
+          <h3>Describe your asset</h3>
+          <p>Type what you want in plain English — “sci-fi HUD with a health bar and minimap, neon blue.” Pick a type and a style preset.</p>
+        </div>
+        <div class="step card reveal">
+          <div class="step-n">2</div>
+          <h3>Generate variations</h3>
+          <p>Get a grid of Unity-ready variations in seconds. Lock a seed you like, tweak the prompt, and iterate until it’s perfect.</p>
+        </div>
+        <div class="step card reveal">
+          <div class="step-n">3</div>
+          <h3>Import into Unity</h3>
+          <p>Download as PNG, sprite sheet, prefab or FBX with correct import settings, and drop it into your scene. Done.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Built for Unity, not against it</span>
+        <h2>Assets that actually fit your pipeline</h2>
+      </div>
+
+      <div class="feature-row reveal">
+        <div class="fr-copy">
+          <span class="eyebrow">UI &amp; HUD kits</span>
+          <h2>uGUI &amp; UI Toolkit, out of the box</h2>
+          <p>Generate complete interface kits — menus, HUDs, inventory grids and button states — that export as prefabs with 9-sliced sprites and sensible anchors.</p>
+          <ul class="fr-list">
+            <li><span class="chk">✔</span> Prefab + sprite atlas export</li>
+            <li><span class="chk">✔</span> 9-slice-ready panels &amp; buttons</li>
+            <li><span class="chk">✔</span> uGUI Canvas &amp; UI Toolkit (UXML) targets</li>
+          </ul>
+        </div>
+        <div class="fr-media" id="feat-ui"></div>
+      </div>
+
+      <div class="feature-row reverse reveal">
+        <div class="fr-copy">
+          <span class="eyebrow">3D &amp; materials</span>
+          <h2>PBR props for URP &amp; HDRP</h2>
+          <p>Spin up low-poly props, modular kits and seamless materials with albedo, normal and roughness maps that plug straight into your render pipeline.</p>
+          <ul class="fr-list">
+            <li><span class="chk">✔</span> FBX meshes with clean topology</li>
+            <li><span class="chk">✔</span> Tileable PBR texture sets</li>
+            <li><span class="chk">✔</span> Built-in, URP &amp; HDRP presets</li>
+          </ul>
+        </div>
+        <div class="fr-media" id="feat-3d"></div>
+      </div>
+
+      <div class="feature-row reveal">
+        <div class="fr-copy">
+          <span class="eyebrow">Iterate fast</span>
+          <h2>Seeds, styles &amp; batch variations</h2>
+          <p>Lock a seed to reproduce a look, batch up to eight variations at once, and reuse style presets across every asset so your whole game stays visually consistent.</p>
+          <ul class="fr-list">
+            <li><span class="chk">✔</span> Deterministic seeds for reproducible results</li>
+            <li><span class="chk">✔</span> Shared style presets across asset types</li>
+            <li><span class="chk">✔</span> Local generation history &amp; favourites</li>
+          </ul>
+        </div>
+        <div class="fr-media" id="feat-batch"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE -->
+  <section class="section" id="showcase" style="background:var(--bg-elev);border-block:1px solid var(--border-soft)">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Made with UnityGUI</span>
+        <h2>A gallery of the possible</h2>
+        <p>Every tile below was generated from a one-line prompt. Hover to see it.</p>
+      </div>
+      <div class="showcase" id="showcase-grid"></div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="section" id="pricing">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Simple, credit-based pricing</span>
+        <h2>Start free, scale when you ship</h2>
+        <p>Every plan includes all eight asset types. Upgrade for more generations, higher resolution and commercial rights.</p>
+      </div>
+      <div class="pricing-grid" id="pricing-grid"></div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq-section" style="background:var(--bg-elev);border-block:1px solid var(--border-soft)">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Good to know</span>
+        <h2>Frequently asked questions</h2>
+      </div>
+      <div class="faq" id="faq"></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-banner reveal">
+        <span class="eyebrow">Your next asset is one sentence away</span>
+        <h2>Build your game’s look in an afternoon</h2>
+        <p>Join the Unity devs generating UI, icons and props with UnityGUI. Free to start, no plugin required.</p>
+        <a class="btn btn-primary btn-lg" href="studio.html">Launch the Studio →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a class="nav-logo" href="index.html"><img src="assets/logo.svg" alt="UnityGUI" /></a>
+          <p>The AI asset platform built for Unity developers. Describe it, generate it, ship it.</p>
+        </div>
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="studio.html">Studio</a></li>
+            <li><a href="#assets">Asset types</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#showcase">Showcase</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#faq-section">FAQ</a></li>
+            <li><a href="https://docs.unity3d.com/Manual/UISystems.html" target="_blank" rel="noopener">Unity UI docs</a></li>
+            <li><a href="studio.html">API (Studio plan)</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Terms</a></li>
+            <li><a href="#">Privacy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span id="year">2026</span> UnityGUI. Not affiliated with Unity Technologies. A Unity-focused clone of the ForgeGUI concept.</span>
+        <span class="mono">Made for game devs · v1.0</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    /* feature media previews */
+    (function () {
+      const G = window.UnityGUIGen;
+      const set = (id, type, prompt, seed) => {
+        const el = document.getElementById(id);
+        if (el && G) G.generateOne(type, prompt, { seed }).then(r => { el.innerHTML = r.svg; });
+      };
+      set("feat-ui", "ui", "Sci-fi inventory HUD neon", 7);
+      set("feat-3d", "model3d", "Low-poly modular crate", 21);
+      set("feat-batch", "thumbnail", "EPIC QUEST hero banner", 33);
+    })();
+  </script>
+</body>
+</html>

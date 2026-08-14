@@ -1,0 +1,15 @@
+<svg width="64" height="64" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fMark" x1="0" y1="0" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7c5cff"/><stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="fSpark" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ff9d6b"/><stop offset="1" stop-color="#ff4d8d"/>
+    </linearGradient>
+  </defs>
+  <rect width="30" height="30" rx="7" fill="#0a0d14"/>
+  <path d="M15 3 L26 9 L15 15 L4 9 Z" fill="url(#fMark)"/>
+  <path d="M4 9 L15 15 V27 L4 21 Z" fill="url(#fMark)" opacity="0.6"/>
+  <path d="M26 9 L15 15 V27 L26 21 Z" fill="url(#fMark)" opacity="0.38"/>
+  <path d="M15 8.6 l1.6 3.2 3.2 1.5 -3.2 1.5 -1.6 3.2 -1.6 -3.2 -3.2 -1.5 3.2 -1.5 Z" fill="url(#fSpark)"/>
+</svg>
