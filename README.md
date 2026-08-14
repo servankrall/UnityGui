@@ -25,28 +25,29 @@ plus a companion marketing site and sign-in console.
 
 The heart of the project. Copy [`unity/UnityGUI/`](./unity/UnityGUI/) into your project's
 `Assets/` folder, open **Window ▸ UnityGUI ▸ AI Game Generator**, paste your Anthropic API key,
-describe a game, and press **Generate**. The plugin writes C# into `Assets/UnityGUI/Generated/`;
-open an empty scene and press **Play** — the generated code builds the whole game itself.
+describe a game, and press **Generate**.
 
 - **Real AI, in the Editor** — calls the Anthropic **Messages API** directly with `UnityWebRequest`.
   No backend, no extra packages.
-- **Bring your own key** — your Anthropic key is stored in Unity's EditorPrefs (local only) and
-  billed to your account.
-- **Reliable output** — uses **structured outputs** (`output_config.format`) so the model returns a
-  strict JSON set of files the plugin writes to disk.
-- **Self-bootstrapping games** — each result includes a `[RuntimeInitializeOnLoadMethod]` entry
-  point that constructs the camera, player, level and UI from code, so Play just works.
-- **Model picker** — defaults to `claude-opus-5`; switch to `claude-sonnet-5` / `claude-haiku-4-5`
-  for faster/cheaper runs.
+- **Pro mode → real assets** — generates a saved **`.unity` scene**, **prefabs**, and procedural
+  **art** (PNG sprites, materials, meshes) wired into a playable scene. The plugin writes gameplay
+  scripts *and* an Editor `SceneBuilder`, then invokes it via reflection once Unity recompiles.
+- **Lite mode → scripts only** — self-bootstrapping code that builds the whole game at Play time
+  (a `[RuntimeInitializeOnLoadMethod]` entry point), no extra asset files.
+- **Reliable output** — **structured outputs** (`output_config.format`) return a strict JSON set of
+  files the plugin writes to disk (path-confined to your project).
+- **Bring your own key** — stored in Unity's EditorPrefs (local only), billed to your account.
+- **Model / style pickers** — defaults to `claude-opus-5`; choose 2D / 3D / Auto.
 
 Full setup and troubleshooting: [`unity/UnityGUI/README.md`](./unity/UnityGUI/README.md).
 
 ```
 unity/UnityGUI/Editor/
-├── UnityGUIWindow.cs        # the Editor window (Window ▸ UnityGUI ▸ …)
-├── GameGenerator.cs         # system prompt, output schema, file writing
-├── ClaudeClient.cs          # Anthropic Messages API client (UnityWebRequest)
-└── UnityGUI.Editor.asmdef    # Editor-only assembly definition
+├── UnityGUIWindow.cs          # the Editor window (Window ▸ UnityGUI ▸ …)
+├── GameGenerator.cs           # prompts, output schema, file writing, build handoff
+├── GeneratedBuildRunner.cs    # runs the generated SceneBuilder after the recompile (Pro)
+├── ClaudeClient.cs            # Anthropic Messages API client (UnityWebRequest)
+└── UnityGUI.Editor.asmdef      # Editor-only assembly definition
 ```
 
 ## 🌐 The companion website

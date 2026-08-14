@@ -68,7 +68,7 @@
     { q: "What exactly does UnityGUI generate?", a: "A complete, playable Unity game as C# scripts, written straight into your project. Each game is self-bootstrapping — it builds its own camera, player, level and UI from code — so you just press Play in an empty scene." },
     { q: "Do I need an Anthropic API key?", a: "Yes. Generation runs on the real Claude API using your own key, which you paste into the plugin. It's stored locally in Unity's EditorPrefs and billed to your Anthropic account — nothing is proxied through us." },
     { q: "Which Unity version and pipeline?", a: "Unity 2021 LTS or newer on the Built-in Render Pipeline, using the legacy Input Manager. The generated code avoids external packages, prefabs and art assets so it runs anywhere." },
-    { q: "Does it create scenes, prefabs or art?", a: "Not in this version. Games are built at runtime from primitives and code, which keeps results reliable and portable. Scene/prefab and asset generation are on the roadmap." },
+    { q: "Does it create scenes, prefabs or art?", a: "Yes — in Pro mode it generates a real .unity scene, prefabs, and procedural art assets (PNG sprites, materials and meshes) wired into a playable scene. A Lite mode is also available that writes self-bootstrapping scripts only, with no extra asset files." },
     { q: "Which model does it use?", a: "It defaults to claude-opus-5 (the most capable) and lets you switch to claude-sonnet-5 or claude-haiku-4-5 for faster, cheaper runs — right from the plugin window." },
     { q: "Is it really the ForgeGUI idea for Unity?", a: "Yes — same describe-to-generate concept, rebuilt as a Unity Editor tool that produces runnable games instead of a hosted asset service." },
   ];
