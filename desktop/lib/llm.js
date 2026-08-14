@@ -101,6 +101,84 @@ async function callLLM(provider, apiKey, model, system, prompt, jsonMode, maxTok
   throw new Error((lastErr ? lastErr.message : "No model available") + extra);
 }
 
+// Ollama status — is the local, unlimited, no-key server running, and which
+// models are pulled? Used to guide users to a provider that never runs out.
+async function ollamaStatus(host) {
+  const base = (host || process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
+  try {
+    const r = await httpJson(base + "/api/tags", { method: "GET" }, 5000);
+    if (!r.ok) return { running: false, base, error: "HTTP " + r.status };
+    let j; try { j = JSON.parse(r.raw); } catch { return { running: true, base, models: [] }; }
+    const models = (j.models || []).map(m => m && m.name).filter(Boolean);
+    return { running: true, base, models };
+  } catch (e) { return { running: false, base, error: e.message }; }
+}
+
+// A rate-limit / quota-exhausted error — recover by waiting or switching key/provider.
+function isRateLimited(msg, status) {
+  if (status === 429) return true;
+  const m = String(msg || "").toLowerCase();
+  return /rate limit|rate-limit|quota|exhaust|resource_exhausted|too many requests|overloaded|capacity|billing|insufficient/.test(m);
+}
+
+// keys for a provider — supports a single string or an array (multi-key rotation).
+function keyList(cfg, provider) {
+  const k = cfg && cfg.keys ? cfg.keys[provider] : null;
+  if (Array.isArray(k)) return k.map(s => String(s || "").trim()).filter(Boolean);
+  const s = String(k || "").trim();
+  return s ? [s] : [];
+}
+
+// Build the full ordered list of (provider, key, model) attempts:
+// the active provider's keys first, then every other provider that has a key,
+// and finally Ollama (local, no key, unlimited) as the last resort.
+function buildCandidates(cfg) {
+  const active = cfg && cfg.provider && PROVIDERS[cfg.provider] ? cfg.provider : "gemini";
+  const order = [active, ...Object.keys(PROVIDERS).filter(p => p !== active)];
+  const out = [];
+  for (const p of order) {
+    const prov = PROVIDERS[p];
+    if (!prov.needsKey) { out.push({ provider: p, apiKey: "", model: prov.defaultModel }); continue; }
+    keyList(cfg, p).forEach((k, i) => {
+      const model = (p === active && i === 0 && cfg.model) ? cfg.model : prov.defaultModel;
+      out.push({ provider: p, apiKey: k, model });
+    });
+  }
+  return out;
+}
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Try every candidate until one works. Recovers from rate-limit/quota (retry a
+// couple of times, then rotate to the next key/provider), retired models, and
+// bad keys. Returns { text, provider, model }.
+async function generateResilient(cfg, system, prompt, jsonMode, maxTokens, opts = {}) {
+  const cands = buildCandidates(cfg);
+  if (!cands.length) throw new Error("No provider configured. Add a free API key, or install Ollama.");
+  const wait = opts.sleep || sleep;
+  const maxRetry = opts.retriesPer429 != null ? opts.retriesPer429 : 2;
+  const backoff = opts.backoff || ((n) => n * 1500);
+  const errs = [];
+  for (const c of cands) {
+    let attempt = 0;
+    for (;;) {
+      try {
+        const { text, model } = await callLLM(c.provider, c.apiKey, c.model, system, prompt, jsonMode, maxTokens);
+        return { text, provider: c.provider, model };
+      } catch (e) {
+        if (isRateLimited(e.message, e.status) && attempt < maxRetry) { attempt++; await wait(backoff(attempt)); continue; }
+        errs.push(`${c.provider}: ${e.message}`);
+        break; // move on to the next key / provider
+      }
+    }
+  }
+  const providers = [...new Set(cands.map(c => c.provider))].join(", ");
+  throw new Error(
+    `All options failed (tried: ${providers}). ${errs.slice(0, 4).join(" | ")}` +
+    ` — tip: install Ollama (ollama.com) to generate 100% free & unlimited with no key/limits.`,
+  );
+}
+
 // ---- JSON extraction + light repair ----------------------------------------
 function stripFences(s) {
   s = String(s).trim();
@@ -120,7 +198,8 @@ function parseResult(text) {
 }
 
 module.exports = {
-  httpJson, apiError, isModelUnavailable,
+  httpJson, apiError, isModelUnavailable, isRateLimited,
   callGemini, callGroq, callOllama, callOne, callLLM,
+  keyList, buildCandidates, generateResilient, ollamaStatus,
   stripFences, parseResult,
 };

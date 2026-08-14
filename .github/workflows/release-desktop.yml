@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.3)"
+        description: "Release tag to publish (e.g. v1.0.4)"
         required: true
-        default: "v1.0.3"
+        default: "v1.0.4"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -58,10 +58,10 @@ jobs:
             **chatting** to refine the game. You just press Play.
 
             - **Two engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file
-            - **Chats + refine**, **genre quick-starts**, **✨ Enhance**, in-app **code view**, **🔁 Regenerate**
-            - **Auto-open, 100% free** (no paid Claude key)
-            - **Self-healing models:** current Gemini ids + automatic fallback if a model is retired
-              (no more *"models no longer usable"* dead ends)
+            - **Never runs out:** paste multiple keys (auto-rotate), auto-fallback across
+              providers, retry rate-limits, and drop to **unlimited local Ollama** (no key/limits)
+            - **32 genre quick-starts**, **✨ Enhance**, in-app **code view**, **🔁 Regenerate**, **📦 Share .zip**
+            - **Chats + refine**, **Auto-open**, **100% free** (no paid Claude key)
           files: desktop/dist/*.exe
           draft: false
           prerelease: false

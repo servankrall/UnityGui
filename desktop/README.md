@@ -6,16 +6,35 @@ website. **Free to run**: it uses a free AI provider (no paid Claude key).
 Connect once, describe a game in plain language, and the app writes a
 ready-to-open project and can **auto-open it in the engine** for you.
 
+### Never run out of free AI
+
+Free online providers have quotas that eventually get exhausted. UnityGUI fights
+that on three fronts so a *"quota exhausted / model no longer usable"* error can't
+stop you:
+
+- **Multiple keys** — paste **several keys** (one per line) on the connect screen
+  and the app **auto-rotates** to the next when one hits its limit.
+- **Cross-provider fallback** — if a whole provider is exhausted, generation
+  **automatically falls back** to another provider you've added, then retries
+  rate-limits with backoff.
+- **Unlimited local Ollama** — the ultimate no-limits path: **Ollama** runs models
+  on your own PC, **free, offline, no key, no quota**. The connect screen has a
+  one-click **“Use unlimited Ollama”** shortcut and a **status checker** that tells
+  you if it's running and which models are installed.
+
 ### What's new
 
 - **Two engines** — generate for **Unity (C#)** or **Roblox Studio (Luau)** from
   the same window; pick the engine per chat.
+- **Share as `.zip`** — export the whole generated project as a single shareable
+  zip (opens the folder so you can send it).
 - **Chats** — every game is a conversation. Keep chatting to **refine** it
   (“make it faster”, “add enemies”, “change to night time”) and the whole game
   is regenerated in place. Conversations are saved in the sidebar; double-click a
   chat to rename it.
-- **Genre quick-starts** — one-tap starter prompts tailored to the engine
-  (Unity: platformer, shooter, tower defense…; Roblox: obby, tycoon, simulator…).
+- **32 genre quick-starts** (16 per engine) — one-tap starter prompts tailored to
+  the engine (Unity: platformer, shooter, racing, tower defense…; Roblox: obby,
+  tycoon, simulator, escape room…).
 - **✨ Enhance** — expand a one-line idea into a detailed, buildable brief before
   generating.
 - **In-app code view** — expand any generated file to read the source, with a
@@ -34,7 +53,7 @@ ready-to-open project and can **auto-open it in the engine** for you.
 |---|---|---|
 | **Google Gemini** | Free tier, no credit card | Free key at [aistudio.google.com](https://aistudio.google.com/app/apikey) |
 | **Groq** | Free, very fast | Free key at [console.groq.com](https://console.groq.com/keys) |
-| **Ollama** | 100% free, offline, **no key** | Install [ollama.com](https://ollama.com/download), then `ollama pull qwen2.5-coder` |
+| **Ollama** | 100% free, offline, **unlimited, no key** | Install [ollama.com](https://ollama.com/download), then `ollama pull qwen2.5-coder` |
 
 ## Get it (Releases)
 
@@ -47,8 +66,11 @@ Download the latest **`UnityGUI-Setup-*.exe`** from the repo's
 
 ## Use it
 
-1. **Connect** — pick a free **provider** (Gemini / Groq / Ollama), paste its free
-   key (Ollama needs none), and click **Connect**. The key is stored only on your PC.
+1. **Connect** — pick a free **provider** (Gemini / Groq / Ollama) and paste its
+   free key, then **Connect**. Keys are stored only on your PC.
+   - **Tired of limits?** Paste **several keys** (one per line) to auto-rotate, add
+     more than one provider so it can fall back, or click **“Use unlimited Ollama”**
+     for a local, offline, no-key, **never-runs-out** setup.
 2. **Pick an engine** — **Unity (C#)** or **Roblox Studio (Luau)** — and a style
    (Auto / 2D / 3D). Leave **Auto-open when done** on for the hands-off flow.
 3. **Describe your game** and press **✦ Generate**. When it's done the app writes

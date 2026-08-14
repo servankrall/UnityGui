@@ -1,7 +1,7 @@
 {
   "name": "unitygui-desktop",
   "productName": "UnityGUI",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Generate full Unity or Roblox Studio games from a prompt — a one-click desktop app powered by free AI (Gemini / Groq / Ollama).",
   "main": "main.js",
   "author": "UnityGUI",
