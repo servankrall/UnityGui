@@ -21,22 +21,28 @@
       <div class="card">
         <span class="badge">● Free — no paid Claude key needed</span>
         <h1>Connect an AI provider</h1>
-        <p class="sub">Pick a free provider and paste its key (or use Ollama locally with no key). Your key stays on this computer.</p>
+        <p class="sub">Pick a free provider and paste its key(s). Tired of limits? Paste <b>several keys</b> (one per line) and the app auto-rotates — and if one provider runs out it falls back to the others (and to Ollama, which is unlimited & needs no key). Keys stay on this computer.</p>
 
         <label for="provider">Provider</label>
         <select id="provider"></select>
 
         <div id="key-block">
-          <label class="mt2" for="key">API key</label>
-          <input id="key" type="password" placeholder="paste your free key…" autocomplete="off" />
+          <label class="mt2" for="key">API key(s) — one per line</label>
+          <textarea id="key" rows="3" placeholder="paste one or more free keys, one per line…" autocomplete="off" spellcheck="false"></textarea>
           <div class="hint" id="key-hint"></div>
         </div>
 
         <label class="mt2" for="c-model">Model</label>
         <select id="c-model"></select>
 
+        <div id="ollama-help" class="hidden">
+          <button class="btn btn-ghost btn-block mt" id="ollama-check">🔌 Check Ollama status</button>
+          <div class="hint" id="ollama-status"></div>
+        </div>
+
         <button class="btn btn-primary btn-block btn-lg mt2" id="connect-btn">Connect</button>
         <button class="link mt" id="get-key-btn" style="background:none;border:0;color:var(--violet2);cursor:pointer;font-size:.85rem;width:100%">Get a free key →</button>
+        <button class="link" id="use-ollama" style="background:none;border:0;color:var(--green);cursor:pointer;font-size:.85rem;width:100%;margin-top:6px">♾️ Sick of limits? Use unlimited Ollama — offline, no key, never runs out →</button>
         <div class="status" id="connect-status"></div>
       </div>
     </div>

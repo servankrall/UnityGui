@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld("api", {
   saveConfig: (cfg) => ipcRenderer.invoke("config:save", cfg),
   disconnect: () => ipcRenderer.invoke("config:disconnect"),
   testConnect: (payload) => ipcRenderer.invoke("connect:test", payload),
+  ollamaStatus: () => ipcRenderer.invoke("ollama:status"),
 
   listConvos: () => ipcRenderer.invoke("convos:list"),
   getConvo: (id) => ipcRenderer.invoke("convos:get", id),
@@ -17,6 +18,8 @@ contextBridge.exposeInMainWorld("api", {
   generate: (payload) => ipcRenderer.invoke("generate", payload),
   pickFolder: () => ipcRenderer.invoke("dialog:pickFolder"),
   saveProject: (payload) => ipcRenderer.invoke("project:save", payload),
+  zipProject: (payload) => ipcRenderer.invoke("project:zip", payload),
   openPath: (p) => ipcRenderer.invoke("shell:open", p),
+  revealPath: (p) => ipcRenderer.invoke("shell:reveal", p),
   openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
 });

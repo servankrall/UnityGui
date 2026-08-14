@@ -5,6 +5,7 @@ let PROVIDERS = {}, ENGINES = {}, GENRES = {};
 let conversationId = null;   // null = new chat
 let currentEngine = "unity";
 let currentTurns = [];
+let activeProvider = "gemini";
 
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
 function setStatus(el,m,err,busy){el.innerHTML=(busy?'<span class="spinner"></span>':"")+(m||"");el.classList.toggle("err",!!err);}
@@ -16,9 +17,27 @@ function currentProvider(){return $("#provider").value;}
 function refreshConnectForm(){
   const p=PROVIDERS[currentProvider()]; if(!p)return;
   $("#key-block").classList.toggle("hidden",!p.needsKey);
+  $("#ollama-help").classList.toggle("hidden",p.needsKey);
   $("#key-hint").textContent=p.keyHint||"";
   $("#get-key-btn").textContent=p.needsKey?"Get a free key →":"Install Ollama →";
+  $("#use-ollama").classList.toggle("hidden",!p.needsKey); // only show the shortcut on key providers
   fill($("#c-model"),p.models,p.defaultModel);
+}
+async function checkOllama(){
+  const s=$("#ollama-status"); s.classList.remove("err");
+  s.innerHTML='<span class="spinner"></span>Checking Ollama…';
+  const r=await window.api.ollamaStatus();
+  if(!r.running){
+    s.classList.add("err");
+    s.innerHTML="Ollama isn't running. Install it from <b>ollama.com/download</b>, then run <code>ollama pull qwen2.5-coder</code> and click Check again.";
+    return;
+  }
+  if(!r.models.length){
+    s.innerHTML="Ollama is running ✓ but no models yet. Run <code>ollama pull qwen2.5-coder</code>, then Connect.";
+  }else{
+    fill($("#c-model"),r.models,r.models[0]);
+    s.innerHTML="Ollama running ✓ — "+r.models.length+" model(s): "+esc(r.models.slice(0,4).join(", "))+". Unlimited & free — pick one and Connect.";
+  }
 }
 function showConnected(connected,provider){
   const chip=$("#conn-chip");
@@ -35,7 +54,7 @@ async function init(){
   fillKV($("#engine"),ENGINES,"unity");
 
   const cfg=await window.api.getConfig();
-  $("#provider").value=cfg.provider;
+  $("#provider").value=cfg.provider; activeProvider=cfg.provider;
   $("#engine").value=cfg.engine||"unity"; currentEngine=cfg.engine||"unity";
   $("#style").value=cfg.style||"auto";
   $("#length").value=String(cfg.maxTokens||16000);
@@ -48,8 +67,10 @@ async function init(){
   // connect
   $("#provider").addEventListener("change",()=>{refreshConnectForm();window.api.saveConfig({provider:currentProvider()});});
   $("#get-key-btn").addEventListener("click",()=>window.api.openExternal(PROVIDERS[currentProvider()].keyUrl));
+  $("#use-ollama").addEventListener("click",()=>{$("#provider").value="ollama";refreshConnectForm();window.api.saveConfig({provider:"ollama"});checkOllama();});
+  $("#ollama-check").addEventListener("click",checkOllama);
   $("#connect-btn").addEventListener("click",onConnect);
-  $("#key").addEventListener("keydown",e=>{if(e.key==="Enter")onConnect();});
+  $("#key").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")onConnect();});
   $("#disconnect-btn").addEventListener("click",async()=>{await window.api.disconnect();showConnected(false);toast("Disconnected");});
 
   // app
@@ -65,21 +86,23 @@ async function init(){
   if(cfg.connected){ await refreshConvos(); if(!currentTurns.length) newChat(); }
 }
 
+function readKeys(){ return $("#key").value.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean); }
 async function onConnect(){
   const provider=currentProvider(),p=PROVIDERS[provider];
-  const key=p.needsKey?$("#key").value.trim():"";
+  const keys=p.needsKey?readKeys():[];
   const model=$("#c-model").value;
-  if(p.needsKey&&!key){setStatus($("#connect-status"),"Paste your free API key first.",true);return;}
+  if(p.needsKey&&!keys.length){setStatus($("#connect-status"),"Paste at least one free API key first.",true);return;}
   const btn=$("#connect-btn");btn.disabled=true;setStatus($("#connect-status"),"Checking…",false,true);
-  await window.api.saveConfig({provider,apiKey:key,model});
-  const r=await window.api.testConnect({provider,apiKey:key,model});
+  await window.api.saveConfig({provider,apiKey:keys,model});
+  const r=await window.api.testConnect({provider,apiKey:keys,model});
   btn.disabled=false;
   if(!r.ok){setStatus($("#connect-status"),r.error||"Could not connect.",true);return;}
   if(r.model&&r.model!==model){ await window.api.saveConfig({model:r.model}); } // auto-healed model
   setStatus($("#connect-status"),"");$("#key").value="";
-  showConnected(true,provider);
+  activeProvider=provider; showConnected(true,provider);
+  if(keys.length>1) toast("Connected ✓ — "+keys.length+" keys will auto-rotate");
+  else toast("Connected ✓");
   await refreshConvos(); newChat();
-  toast("Connected ✓");
 }
 
 // ---- Genre quick-starts ----------------------------------------------------
@@ -153,9 +176,10 @@ function renderTurns(){
   box.innerHTML=currentTurns.map((t,i)=>turnHtml(t,i,i===currentTurns.length-1)).join("");
   // wire per-turn actions
   const last=currentTurns[currentTurns.length-1];
-  const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn");
+  const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn"), zipBtn=box.querySelector("#zip-btn");
   if(openBtn) openBtn.addEventListener("click",()=>{ if(last._openTarget) window.api.openPath(last._openTarget); });
   if(saveBtn) saveBtn.addEventListener("click",()=>onSave(last.result));
+  if(zipBtn) zipBtn.addEventListener("click",()=>onShareZip(last.result));
   if(regenBtn) regenBtn.addEventListener("click",onRegenerate);
   // copy buttons for code files
   box.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",()=>{
@@ -186,6 +210,7 @@ function turnHtml(t,idx,isLast){
       ${isLast?`<div class="actions">
         <button class="btn btn-ember" id="open-btn">▶ Open in ${esc((engineName||"engine").split(" ")[0])}</button>
         <button class="btn btn-ghost" id="save-btn">💾 Save to…</button>
+        <button class="btn btn-ghost" id="zip-btn" title="Export the whole project as a shareable .zip">📦 Share .zip</button>
         <button class="btn btn-ghost" id="regen-btn" title="Regenerate this from the same prompt">🔁 Regenerate</button>
       </div>`:""}
     </div>
@@ -220,9 +245,16 @@ async function runGenerate(payload,busyMsg){
   $("#prompt").value=""; $("#prompt").placeholder="Ask for a change… (e.g. make it faster, add enemies)";
   renderTurns();
   await refreshConvos();
-  if(r.saved&&r.saved.openTarget){ toast("Generated & opened ✓"); setStatus($("#gen-status"),"Saved & opened: "+r.saved.openTarget,false); }
+  // Reflect an automatic provider switch (a key/provider ran out → fell back).
+  let switched="";
+  if(r.usedProvider&&r.usedProvider!==activeProvider){
+    const name=PROVIDERS[r.usedProvider]?PROVIDERS[r.usedProvider].label.split("—")[0].trim():r.usedProvider;
+    activeProvider=r.usedProvider; showConnected(true,r.usedProvider);
+    switched=" (switched to "+name+")"; toast("Switched to "+name+" ✓");
+  }
+  if(r.saved&&r.saved.openTarget){ if(!switched)toast("Generated & opened ✓"); setStatus($("#gen-status"),"Saved & opened: "+r.saved.openTarget+switched,false); }
   else if(r.saved&&r.saved.error){ setStatus($("#gen-status"),"Generated. Auto-open failed: "+r.saved.error,true); }
-  else { toast("Generated ✓"); }
+  else if(!switched){ toast("Generated ✓"); }
   return r;
 }
 
@@ -244,6 +276,15 @@ async function onSave(data){
   if(!r.ok){setStatus($("#gen-status"),r.error||"Could not save.",true);return;}
   setStatus($("#gen-status"),"Saved: "+r.path,false);
   if(confirm("Saved to:\n"+r.path+"\n\nOpen it now?")) window.api.openPath(r.openTarget||r.path);
+}
+
+async function onShareZip(data){
+  setStatus($("#gen-status"),"Packaging .zip…",false,true);
+  const r=await window.api.zipProject({engine:data.engine||currentEngine,data});
+  if(!r.ok){setStatus($("#gen-status"),r.error||"Could not create the zip.",true);return;}
+  setStatus($("#gen-status"),"Zipped: "+r.zipPath,false);
+  toast("Zipped ✓ — sharing folder opened");
+  window.api.revealPath(r.zipPath);
 }
 
 window.addEventListener("DOMContentLoaded",init);

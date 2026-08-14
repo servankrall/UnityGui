@@ -10,6 +10,7 @@ const { PROVIDERS, ENGINES } = require("../lib/providers");
 const prompts = require("../lib/prompts");
 const writers = require("../lib/writers");
 const llm = require("../lib/llm");
+const zip = require("../lib/zip");
 
 let passed = 0;
 const tests = [];
@@ -174,6 +175,98 @@ test("callLLM: does NOT fall back on an auth error (fails fast)", async () => {
     /API key not valid/,
   );
   assert.strictEqual(calls.length, 1, "auth error tried exactly one model");
+});
+
+// ---- rate-limit detection + resilient fallback -----------------------------
+test("isRateLimited: recognises 429 / quota / exhausted", () => {
+  assert.ok(llm.isRateLimited("anything", 429));
+  assert.ok(llm.isRateLimited("Resource has been exhausted (check quota)", 400));
+  assert.ok(llm.isRateLimited("Rate limit reached for requests", 200));
+  assert.ok(!llm.isRateLimited("bad request: prompt too long", 400));
+});
+
+test("buildCandidates: active provider first, multi-key, Ollama last", () => {
+  const cfg = { provider: "groq", model: "llama-3.3-70b-versatile", keys: { groq: ["g1", "g2"], gemini: "k1" } };
+  const cands = llm.buildCandidates(cfg);
+  assert.strictEqual(cands[0].provider, "groq");
+  assert.strictEqual(cands[0].apiKey, "g1");
+  assert.strictEqual(cands[1].apiKey, "g2");         // second groq key
+  assert.ok(cands.some(c => c.provider === "gemini" && c.apiKey === "k1"));
+  assert.strictEqual(cands[cands.length - 1].provider, "ollama"); // unlimited last resort
+});
+
+test("generateResilient: rotates to the next key when the first is rate-limited", async () => {
+  const seen = [];
+  global.fetch = async (url) => {
+    const key = String(url).match(/key=([^&]+)/)[1];
+    seen.push(key);
+    if (key === "k1") return mockRes(false, 429, JSON.stringify({ error: { message: "quota exhausted" } }));
+    return mockRes(true, 200, JSON.stringify({ candidates: [{ content: { parts: [{ text: "OK" }] } }] }));
+  };
+  const cfg = { provider: "gemini", model: "gemini-2.5-flash", keys: { gemini: ["k1", "k2"] } };
+  const r = await llm.generateResilient(cfg, "sys", "hi", false, 20, { retriesPer429: 0, sleep: async () => {} });
+  assert.strictEqual(r.text, "OK");
+  assert.strictEqual(r.provider, "gemini");
+  assert.ok(seen.includes("k2"), "used the second key after the first was exhausted");
+});
+
+test("generateResilient: falls back to another provider when one is exhausted", async () => {
+  global.fetch = async (url) => {
+    if (String(url).includes("generativelanguage")) return mockRes(false, 429, JSON.stringify({ error: { message: "RESOURCE_EXHAUSTED" } }));
+    if (String(url).includes("api.groq.com")) return mockRes(true, 200, JSON.stringify({ choices: [{ message: { content: "GROQ_OK" } }] }));
+    throw new Error("unexpected host");
+  };
+  const cfg = { provider: "gemini", model: "gemini-2.5-flash", keys: { gemini: "gk", groq: "qk" } };
+  const r = await llm.generateResilient(cfg, "sys", "hi", true, 20, { retriesPer429: 0, sleep: async () => {} });
+  assert.strictEqual(r.provider, "groq");
+  assert.strictEqual(r.text, "GROQ_OK");
+});
+
+test("generateResilient: when everything fails, error points to Ollama", async () => {
+  global.fetch = async (url) => {
+    if (String(url).includes("11434")) throw new Error("ECONNREFUSED"); // ollama not running
+    return mockRes(false, 429, JSON.stringify({ error: { message: "quota exhausted" } }));
+  };
+  const cfg = { provider: "gemini", model: "gemini-2.5-flash", keys: { gemini: "gk", groq: "qk" } };
+  await assert.rejects(
+    () => llm.generateResilient(cfg, "sys", "hi", true, 20, { retriesPer429: 0, sleep: async () => {} }),
+    /Ollama/,
+  );
+});
+
+// ---- ZIP writer ------------------------------------------------------------
+test("zip: crc32 matches the PKZIP reference vector", () => {
+  assert.strictEqual(zip.crc32(Buffer.from("123456789")), 0xcbf43926);
+});
+
+test("zip: buffer has PK signatures and round-trips its entries", () => {
+  const zlib = require("zlib");
+  const entries = [
+    { name: "Game/Boot.cs", data: "using UnityEngine; // " + "x".repeat(500) },
+    { name: "Game/readme.txt", data: "hi" },
+  ];
+  const buf = zip.zipBuffer(entries);
+  assert.strictEqual(buf.readUInt32LE(0), 0x04034b50, "local file header signature");
+  // EOCD near the end with the right entry count
+  const eocd = buf.length - 22;
+  assert.strictEqual(buf.readUInt32LE(eocd), 0x06054b50, "EOCD signature");
+  assert.strictEqual(buf.readUInt16LE(eocd + 10), entries.length, "total entries");
+  // decode the first local entry and compare the bytes back
+  const method = buf.readUInt16LE(8);
+  const nameLen = buf.readUInt16LE(26), extraLen = buf.readUInt16LE(28);
+  const compSize = buf.readUInt32LE(18);
+  const start = 30 + nameLen + extraLen;
+  const body = buf.subarray(start, start + compSize);
+  const out = method === 8 ? zlib.inflateRawSync(body) : body;
+  assert.strictEqual(out.toString("utf8"), entries[0].data, "first entry round-trips");
+});
+
+test("zip: zipDir packs a real project directory", () => {
+  const dir = mkTmp();
+  const out = writers.writeUnityProject(dir, { game_name: "Zippable", files: [{ path: "A.cs", content: "// a" }] });
+  const zipPath = zip.zipDir(out.root);
+  assert.ok(fs.existsSync(zipPath) && zipPath.endsWith(".zip"));
+  assert.ok(fs.statSync(zipPath).size > 100, "zip has content");
 });
 
 // ---- helpers ---------------------------------------------------------------

@@ -10,8 +10,9 @@ const fs = require("fs");
 
 const { PROVIDERS, ENGINES } = require("./lib/providers");
 const prompts = require("./lib/prompts");
-const { callLLM, parseResult } = require("./lib/llm");
+const { callLLM, generateResilient, parseResult, keyList, ollamaStatus } = require("./lib/llm");
 const writers = require("./lib/writers");
+const zip = require("./lib/zip");
 
 const CONFIG_PATH = () => path.join(app.getPath("userData"), "config.json");
 const CONVOS_PATH = () => path.join(app.getPath("userData"), "conversations.json");
@@ -30,7 +31,11 @@ function loadConfig() {
   return c;
 }
 function saveConfig(c) { try { fs.writeFileSync(CONFIG_PATH(), JSON.stringify(c, null, 2)); return true; } catch { return false; } }
-function isConnected(c) { return PROVIDERS[c.provider].needsKey ? !!(c.keys && c.keys[c.provider]) : true; }
+// The connect gate keys on the ACTIVE provider (Ollama needs no key). Generation
+// itself still falls back across every provider that has a stored key.
+function isConnected(c) { return PROVIDERS[c.provider].needsKey ? keyList(c, c.provider).length > 0 : true; }
+// How many providers we can currently draw on (for a status hint).
+function readyProviders(c) { return Object.keys(PROVIDERS).filter(p => !PROVIDERS[p].needsKey || keyList(c, p).length); }
 
 // ---- Conversation store ----------------------------------------------------
 function loadConvos() { try { return JSON.parse(fs.readFileSync(CONVOS_PATH(), "utf8")) || []; } catch { return []; } }
@@ -64,7 +69,11 @@ app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(
 ipcMain.handle("providers:get", () => ({ providers: PROVIDERS, engines: ENGINES, genres: prompts.GENRES }));
 ipcMain.handle("config:get", () => {
   const c = loadConfig();
-  return { provider: c.provider, connected: isConnected(c), model: c.model, engine: c.engine, style: c.style, autoOpen: c.autoOpen, maxTokens: c.maxTokens || 16000 };
+  return {
+    provider: c.provider, connected: isConnected(c), model: c.model, engine: c.engine,
+    style: c.style, autoOpen: c.autoOpen, maxTokens: c.maxTokens || 16000,
+    keyCount: keyList(c, c.provider).length, ready: readyProviders(c),
+  };
 });
 ipcMain.handle("config:save", (_e, patch) => {
   const c = loadConfig();
@@ -74,14 +83,23 @@ ipcMain.handle("config:save", (_e, patch) => {
   if (patch.style) c.style = patch.style;
   if (typeof patch.autoOpen === "boolean") c.autoOpen = patch.autoOpen;
   if (Number.isFinite(patch.maxTokens)) c.maxTokens = Math.max(2000, Math.min(32000, patch.maxTokens));
-  if (patch.apiKey !== undefined) { c.keys = c.keys || {}; c.keys[c.provider] = patch.apiKey; }
+  if (patch.apiKey !== undefined) {
+    c.keys = c.keys || {};
+    // Accept a single key or an array (one per line) for auto-rotation.
+    const val = Array.isArray(patch.apiKey)
+      ? [...new Set(patch.apiKey.map(s => String(s || "").trim()).filter(Boolean))]
+      : String(patch.apiKey || "").trim();
+    c.keys[patch.provider && PROVIDERS[patch.provider] ? patch.provider : c.provider] = val;
+  }
   return saveConfig(c);
 });
 ipcMain.handle("config:disconnect", () => { const c = loadConfig(); if (c.keys) c.keys[c.provider] = ""; return saveConfig(c); });
 
+ipcMain.handle("ollama:status", () => ollamaStatus());
 ipcMain.handle("connect:test", async (_e, { provider, apiKey, model }) => {
+  const key = Array.isArray(apiKey) ? apiKey.find(Boolean) : apiKey;
   try {
-    const { text, model: used } = await callLLM(provider, apiKey, model || PROVIDERS[provider].defaultModel, "You are a connectivity check.", "Reply with the single word OK.", false, 20);
+    const { text, model: used } = await callLLM(provider, key, model || PROVIDERS[provider].defaultModel, "You are a connectivity check.", "Reply with the single word OK.", false, 20);
     return { ok: true, sample: (text || "").trim().slice(0, 40), model: used };
   } catch (e) { return { ok: false, error: e.message }; }
 });
@@ -98,11 +116,10 @@ ipcMain.handle("convos:rename", (_e, { id, title }) => {
 // ---- IPC: prompt enhancer --------------------------------------------------
 ipcMain.handle("prompt:enhance", async (_e, { idea, engine }) => {
   const c = loadConfig();
-  const key = c.keys ? c.keys[c.provider] : "";
-  if (PROVIDERS[c.provider].needsKey && !key) return { ok: false, error: "Not connected. Add your free API key first." };
+  if (!isConnected(c)) return { ok: false, error: "Not connected. Add your free API key first." };
   if (!idea || !idea.trim()) return { ok: false, error: "Type an idea to enhance first." };
   try {
-    const { text } = await callLLM(c.provider, key, c.model, prompts.ENHANCE_SYSTEM, prompts.buildEnhancePrompt(engine || c.engine, idea.trim()), false, 600);
+    const { text } = await generateResilient(c, prompts.ENHANCE_SYSTEM, prompts.buildEnhancePrompt(engine || c.engine, idea.trim()), false, 600);
     return { ok: true, text: (text || "").trim() };
   } catch (e) { return { ok: false, error: e.message }; }
 });
@@ -110,8 +127,7 @@ ipcMain.handle("prompt:enhance", async (_e, { idea, engine }) => {
 // ---- IPC: generate (with refine + regenerate + conversation) ---------------
 ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) => {
   const c = loadConfig();
-  const key = c.keys ? c.keys[c.provider] : "";
-  if (PROVIDERS[c.provider].needsKey && !key) return { ok: false, error: "Not connected. Add your free API key first." };
+  if (!isConnected(c)) return { ok: false, error: "Not connected. Add your free API key first." };
 
   let convo = conversationId ? getConvo(conversationId) : null;
   const engine = convo ? convo.engine : c.engine;
@@ -128,10 +144,15 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) =>
     const userMsg = convo && convo.turns.length
       ? prompts.buildRefinePrompt(convo.turns[convo.turns.length - 1].result, prompt)
       : prompt;
-    const { text, model: usedModel } = await callLLM(c.provider, key, c.model, system, userMsg, true, c.maxTokens || 16000);
+    // Resilient: rotates keys, falls back across providers, retries on rate-limit.
+    const { text, provider: usedProvider, model: usedModel } = await generateResilient(c, system, userMsg, true, c.maxTokens || 16000);
 
-    // Auto-heal: if fallback picked a different working model, remember it.
-    if (usedModel && usedModel !== c.model) { c.model = usedModel; saveConfig(c); }
+    // Auto-heal: remember whichever provider/model actually worked so next time starts there.
+    if ((usedProvider && usedProvider !== c.provider) || (usedModel && usedModel !== c.model)) {
+      if (usedProvider) c.provider = usedProvider;
+      if (usedModel) c.model = usedModel;
+      saveConfig(c);
+    }
 
     const data = parseResult(text);
     if (!data || !Array.isArray(data.files) || data.files.length === 0)
@@ -155,7 +176,7 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) =>
         shell.openPath(saved.openTarget);
       } catch (e) { saved = { error: e.message }; }
     }
-    return { ok: true, data, conversationId: convo.id, saved, usedModel };
+    return { ok: true, data, conversationId: convo.id, saved, usedProvider, usedModel };
   } catch (e) { return { ok: false, error: e.message }; }
 });
 
@@ -167,5 +188,13 @@ ipcMain.handle("project:save", (_e, { engine, data, dir }) => {
   try { const s = writers.writeProject(engine, dir, data); return { ok: true, path: s.root, openTarget: s.openTarget }; }
   catch (e) { return { ok: false, error: e.message }; }
 });
+ipcMain.handle("project:zip", (_e, { engine, data, dir }) => {
+  try {
+    const s = writers.writeProject(engine, dir || DEFAULT_OUT(), data);
+    const zipPath = zip.zipDir(s.root);
+    return { ok: true, zipPath, root: s.root };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
 ipcMain.handle("shell:open", (_e, p) => shell.openPath(p));
+ipcMain.handle("shell:reveal", (_e, p) => shell.showItemInFolder(p));
 ipcMain.handle("shell:openExternal", (_e, url) => shell.openExternal(url));
