@@ -41,46 +41,45 @@
       </div>
     </div>
 
-    <!-- GENERATOR SCREEN -->
-    <div class="app hidden" id="app-view">
-      <div class="panel">
-        <div class="field">
-          <label for="prompt">Describe your game</label>
-          <textarea id="prompt" placeholder="e.g. A 2D endless runner where a cube jumps over obstacles. Space to jump, score for distance."></textarea>
-        </div>
-        <div class="field">
-          <label>Need an idea?</label>
-          <div class="chips" id="ideas"></div>
-        </div>
-        <div class="field">
-          <div class="row">
-            <div>
-              <label for="model">Model</label>
-              <select id="model"></select>
-            </div>
-            <div>
-              <label for="style">Style</label>
-              <select id="style">
-                <option value="auto">Auto</option>
-                <option value="2d">2D</option>
-                <option value="3d">3D</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <button class="btn btn-primary btn-block btn-lg" id="generate-btn">✦ Generate game</button>
-        <div class="status" id="gen-status"></div>
-      </div>
+    <!-- APP: conversations + generator -->
+    <div class="layout hidden" id="app-view">
+      <!-- Conversations sidebar -->
+      <aside class="side">
+        <button class="btn btn-primary btn-block" id="new-chat">＋ New chat</button>
+        <div class="convos" id="convos"></div>
+      </aside>
 
-      <div class="panel">
-        <div class="result" id="result">
-          <div class="empty" id="empty">
-            <div class="art">🎮</div>
-            <h2>Your game appears here</h2>
-            <p class="sub">Describe a game and press Generate. Then save it as a ready-to-open Unity project.</p>
+      <!-- Main -->
+      <main class="main">
+        <div class="controls">
+          <div>
+            <label for="engine">Engine</label>
+            <select id="engine"></select>
+          </div>
+          <div>
+            <label for="style">Style</label>
+            <select id="style">
+              <option value="auto">Auto</option>
+              <option value="2d">2D</option>
+              <option value="3d">3D</option>
+            </select>
+          </div>
+          <div class="autoopen">
+            <label class="chkline"><input type="checkbox" id="auto-open" /> Auto-open when done</label>
           </div>
         </div>
-      </div>
+
+        <div class="turns" id="turns"></div>
+
+        <div class="composer">
+          <textarea id="prompt" placeholder="Describe your game… (e.g. a 2D runner where a cube jumps over obstacles, space to jump)"></textarea>
+          <div class="composer-row">
+            <div class="chips" id="ideas"></div>
+            <button class="btn btn-primary" id="generate-btn">✦ Generate</button>
+          </div>
+          <div class="status" id="gen-status"></div>
+        </div>
+      </main>
     </div>
   </div>
 
