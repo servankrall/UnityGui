@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.2)"
+        description: "Release tag to publish (e.g. v1.0.3)"
         required: true
-        default: "v1.0.2"
+        default: "v1.0.3"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -58,8 +58,10 @@ jobs:
             **chatting** to refine the game. You just press Play.
 
             - **Two engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file
-            - **Chats + refine, auto-open, 100% free** (no paid Claude key)
-            - Fixed the Gemini *"models no longer usable"* error (now uses current model ids)
+            - **Chats + refine**, **genre quick-starts**, **✨ Enhance**, in-app **code view**, **🔁 Regenerate**
+            - **Auto-open, 100% free** (no paid Claude key)
+            - **Self-healing models:** current Gemini ids + automatic fallback if a model is retired
+              (no more *"models no longer usable"* dead ends)
           files: desktop/dist/*.exe
           draft: false
           prerelease: false

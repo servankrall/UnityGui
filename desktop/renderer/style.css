@@ -91,6 +91,7 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 .convo-del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:.8rem;padding:2px 4px;border-radius:6px}
 .convo-del:hover{color:#ff8a8a;background:var(--surface2)}
 .convo-empty{color:var(--dim);font-size:.82rem;padding:10px 4px}
+.rename-input{font:inherit;font-size:.86rem;padding:.2rem .35rem;border-radius:6px;border:1px solid var(--violet);background:var(--surface2);color:var(--text);width:100%}
 
 .main{display:flex;flex-direction:column;min-height:0}
 .controls{display:flex;gap:12px;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap}
@@ -116,4 +117,20 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 .composer{margin-top:10px}
 .composer textarea{min-height:70px}
 .composer-row{display:flex;align-items:center;gap:10px;margin-top:8px}
-.composer-row .chips{flex:1;overflow:hidden;max-height:30px}
+.composer-row .spacer{flex:1}
+
+/* genre quick-starts */
+.genres{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}
+
+/* generated file viewer */
+.files{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.file{background:var(--surface2);border:1px solid var(--border-soft);border-radius:10px;overflow:hidden}
+.file>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:.5rem .7rem;font-size:.82rem}
+.file>summary::-webkit-details-marker{display:none}
+.file>summary::before{content:"▸";color:var(--dim);transition:transform .15s}
+.file[open]>summary::before{transform:rotate(90deg)}
+.file .fname{font-family:"Cascadia Code",ui-monospace,monospace;color:var(--text)}
+.file summary em{color:var(--dim);font-style:normal;font-size:.76rem}
+.file .copy{margin-left:auto;background:var(--surface3);border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer;padding:.1rem .45rem;font-size:.85rem}
+.file .copy:hover{color:var(--text)}
+.file .code{margin:0;padding:.7rem .85rem;border-top:1px solid var(--border-soft);background:#0b0f18;color:#cbd5e6;font-family:"Cascadia Code",ui-monospace,monospace;font-size:.76rem;line-height:1.5;max-height:300px;overflow:auto;white-space:pre;tab-size:2}

@@ -1,13 +1,14 @@
 {
   "name": "unitygui-desktop",
   "productName": "UnityGUI",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Generate full Unity or Roblox Studio games from a prompt — a one-click desktop app powered by free AI (Gemini / Groq / Ollama).",
   "main": "main.js",
   "author": "UnityGUI",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "test": "node test/test.js",
     "dist": "electron-builder --win --publish never",
     "dist:dir": "electron-builder --win --dir --publish never"
   },
@@ -19,7 +20,7 @@
     "appId": "com.unitygui.app",
     "productName": "UnityGUI",
     "artifactName": "UnityGUI-Setup-${version}.${ext}",
-    "files": ["main.js", "preload.js", "renderer/**/*", "assets/**/*"],
+    "files": ["main.js", "preload.js", "lib/**/*", "renderer/**/*", "assets/**/*"],
     "directories": { "output": "dist" },
     "win": {
       "target": "nsis",

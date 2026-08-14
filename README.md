@@ -34,15 +34,20 @@ on it writes the project and opens it in the engine for you. You just press Play
   gets a full project; Roblox gets a ready-to-open `.rbxlx` place file.
 - **Chats + refine** — every game is a saved conversation; keep chatting
   (“make it faster”, “add enemies”) and the whole game regenerates in place.
+- **Genre quick-starts + ✨ Enhance** — one-tap starter prompts per engine, and an
+  Enhance button that expands a one-line idea into a full brief before generating.
+- **In-app code view + 🔁 Regenerate** — read/copy any generated file, choose
+  generation length, and re-roll the latest result.
 - **Fully automatic** — **Auto-open when done** writes and launches the project the
   moment generation finishes. Write the prompt; it does the rest.
-- **Free — no paid Claude key** — runs on **Google Gemini** (free tier, no credit card),
+- **Free & self-healing** — runs on **Google Gemini** (free tier, no credit card),
   **Groq** (free), or **Ollama** (100% local/offline, no key). Uses current model ids
-  (the retired Gemini `1.5` ids that broke with *“models no longer usable”* are gone).
+  and **auto-falls-back** to another model if one is ever retired — no more
+  *“models no longer usable”* dead ends.
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
-  your key never leaves your machine).
+  your key never leaves your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.2` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.3` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 
