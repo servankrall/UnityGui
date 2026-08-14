@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>UnityGUI — Generate Unity Games from a Prompt</title>
-  <meta name="description" content="An AI game generator that lives inside the Unity Editor. Describe a game, and UnityGUI writes ready-to-run C# into your project — press Play and it works. Powered by Claude." />
+  <meta name="description" content="An AI game generator that lives inside the Unity Editor. Describe a game, and UnityGUI writes ready-to-run C# into your project — press Play and it works. Powered by free AI." />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/landing.css" />
@@ -42,13 +42,13 @@
       <h1>Describe a game.<br /><span class="gradient-text">Play it in Unity.</span></h1>
       <p class="lead">
         UnityGUI is an AI game generator that lives right in the Unity Editor. Write one sentence and
-        it generates ready-to-run C# into your project — press Play and your game just works. Powered by Claude.
+        it generates ready-to-run C# into your project — press Play and your game just works. Powered by free AI.
       </p>
       <div class="hero-cta">
         <a class="btn btn-primary btn-lg" href="studio.html">Get the plugin →</a>
         <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
       </div>
-      <p class="hero-note">Runs in the Editor · Bring your own Anthropic key · Unity 2021 LTS+</p>
+      <p class="hero-note">Free · Gemini / Groq / Ollama · Unity 2021 LTS+</p>
 
       <!-- prompt demo -->
       <div class="prompt-demo">
@@ -102,7 +102,7 @@
         <div class="step card reveal">
           <div class="step-n">1</div>
           <h3>Add the plugin</h3>
-          <p>Drop the UnityGUI folder into your project’s Assets. A new window appears under <b>Window ▸ UnityGUI</b>. Paste your Anthropic API key once.</p>
+          <p>Get the desktop app or drop the plugin into your project. Connect a <b>free</b> AI provider (Gemini, Groq, or local Ollama) — no paid key.</p>
         </div>
         <div class="step card reveal">
           <div class="step-n">2</div>
@@ -112,7 +112,7 @@
         <div class="step card reveal">
           <div class="step-n">3</div>
           <h3>Press Play</h3>
-          <p>Claude writes ready-to-run C# into your project. Open an empty scene, press Play, and the game bootstraps itself. Edit the code freely.</p>
+          <p>The AI writes ready-to-run C# into your project. Open an empty scene, press Play, and the game bootstraps itself. Edit the code freely.</p>
         </div>
       </div>
     </div>
@@ -156,12 +156,12 @@
 
       <div class="feature-row reveal">
         <div class="fr-copy">
-          <span class="eyebrow">Powered by Claude</span>
-          <h2>Bring your own key — and your own backend</h2>
-          <p>Generation runs on the real Claude API with your own Anthropic key, stored locally in Unity. Want to swap in a different model or pipeline? The generation seam and JSON schema are documented and easy to extend.</p>
+          <span class="eyebrow">Free AI providers</span>
+          <h2>Free to run — no paid Claude key</h2>
+          <p>Generation runs on a free provider: Google Gemini (free tier, no credit card), Groq (free &amp; fast), or Ollama (100% local and offline, no key). Pick a provider, paste its free key, and go. Your key stays on your machine.</p>
           <ul class="fr-list">
-            <li><span class="chk">✔</span> Direct Messages API call (no middleman)</li>
-            <li><span class="chk">✔</span> Structured outputs for reliable code</li>
+            <li><span class="chk">✔</span> Gemini / Groq free keys · Ollama needs none</li>
+            <li><span class="chk">✔</span> JSON-mode output for reliable code</li>
             <li><span class="chk">✔</span> Open source &amp; MIT-licensed</li>
           </ul>
         </div>
@@ -187,8 +187,8 @@
     <div class="container">
       <div class="section-head reveal">
         <span class="eyebrow">Honest pricing</span>
-        <h2>The plugin is free — you pay only for what you generate</h2>
-        <p>UnityGUI is open source. Generation runs on your own Anthropic key, so you pay Anthropic for usage and nothing to us.</p>
+        <h2>Free — and open source</h2>
+        <p>The apps are open source and generation runs on a free AI provider (Gemini, Groq, or local Ollama). No paid Claude key, no fees to us.</p>
       </div>
       <div class="pricing-grid" id="pricing-grid"></div>
     </div>
@@ -223,7 +223,7 @@
       <div class="footer-top">
         <div class="footer-brand">
           <a class="nav-logo" href="index.html"><img src="assets/logo.svg" alt="UnityGUI" /></a>
-          <p>An AI game generator for the Unity Editor. Describe a game, generate the code, press Play. Powered by Claude.</p>
+          <p>An AI game generator for the Unity Editor. Describe a game, generate the code, press Play. Powered by free AI.</p>
         </div>
         <div>
           <h4>Product</h4>
@@ -240,7 +240,7 @@
             <li><a href="#how">How it works</a></li>
             <li><a href="#faq-section">FAQ</a></li>
             <li><a href="https://github.com/servankrall/UnityGui/tree/main/unity/UnityGUI" target="_blank" rel="noopener">The Unity plugin</a></li>
-            <li><a href="https://docs.anthropic.com/en/api/getting-started" target="_blank" rel="noopener">Claude API docs</a></li>
+            <li><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get a free AI key</a></li>
           </ul>
         </div>
         <div>
@@ -254,7 +254,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <span>© <span id="year">2026</span> UnityGUI. Not affiliated with Unity Technologies or Anthropic. A Unity-focused take on the ForgeGUI concept.</span>
+        <span>© <span id="year">2026</span> UnityGUI. Not affiliated with Unity Technologies, Google or ForgeGUI. A Unity-focused take on the ForgeGUI concept.</span>
         <span class="mono">Made for game devs · v1.0</span>
       </div>
     </div>

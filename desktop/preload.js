@@ -2,6 +2,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
+  getProviders: () => ipcRenderer.invoke("providers:get"),
   getConfig: () => ipcRenderer.invoke("config:get"),
   saveConfig: (cfg) => ipcRenderer.invoke("config:save", cfg),
   disconnect: () => ipcRenderer.invoke("config:disconnect"),
@@ -10,4 +11,5 @@ contextBridge.exposeInMainWorld("api", {
   pickFolder: () => ipcRenderer.invoke("dialog:pickFolder"),
   saveProject: (payload) => ipcRenderer.invoke("project:save", payload),
   openPath: (p) => ipcRenderer.invoke("shell:open", p),
+  openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
 });
