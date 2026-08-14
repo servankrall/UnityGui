@@ -2,122 +2,100 @@
 
 # UnityGUI
 
-**The AI asset platform, built for Unity developers.**
+**Generate playable Unity games from a prompt — right inside the Editor.**
 
-Describe it → Generate it → Ship it in Unity.
+Describe a game → Claude writes ready-to-run C# into your project → press Play.
 
-A Unity‑focused clone of the [ForgeGUI](https://forgegui.com) concept: type a one‑line prompt and
-get game‑ready **UI kits, icons, thumbnails, sprites, characters, 3D props, textures and skyboxes**,
-exported in the formats Unity expects (uGUI / UI Toolkit, URP / HDRP).
+A Unity-focused take on the [ForgeGUI](https://forgegui.com) "describe-to-generate" concept,
+rebuilt as a **Unity Editor plugin** that produces runnable games (powered by the Claude API),
+plus a companion marketing site and sign-in console.
 
 </div>
 
 ---
 
-## ✨ What it does
+## Two parts
 
-UnityGUI reproduces the ForgeGUI "describe‑to‑generate" workflow, rebuilt around Unity's asset
-pipeline. It ships as a **self‑contained static web app** — no build step, no framework, no
-external dependencies — so it runs by just opening a file or serving the folder.
+| | What it is | Where |
+|---|---|---|
+| 🎮 **Unity Editor plugin** | The product. A `Window ▸ UnityGUI` tool that turns a prompt into a complete, self-bootstrapping Unity game (C#), via the Claude API. | [`unity/UnityGUI/`](./unity/UnityGUI/) |
+| 🌐 **Companion website** | Landing page + Google sign-in **console** (setup & download hub) for the plugin. Static, no build step. | repo root (`index.html`, `studio.html`) |
 
-- **Landing site** (`index.html`) — hero, live typing demo, asset‑type catalog, features,
-  showcase gallery, pricing and FAQ.
-- **Studio** (`studio.html`) — the actual generator: pick an asset type, write a prompt, choose a
-  style preset / resolution / number of variations, and generate. Results support download,
-  favourites, a detail view, "more like this", a credits system and local history.
+## 🎮 The Unity plugin
 
-### Asset types
+The heart of the project. Copy [`unity/UnityGUI/`](./unity/UnityGUI/) into your project's
+`Assets/` folder, open **Window ▸ UnityGUI ▸ AI Game Generator**, paste your Anthropic API key,
+describe a game, and press **Generate**. The plugin writes C# into `Assets/UnityGUI/Generated/`;
+open an empty scene and press **Play** — the generated code builds the whole game itself.
 
-| Type | Unity target | Export |
-|------|--------------|--------|
-| UI / GUI kits | uGUI · UI Toolkit | Prefab + sprite atlas |
-| Game icons | Asset Store | PNG (sRGB) |
-| Thumbnails | Store / YouTube | 1280×720 PNG |
-| 2D sprites | Sprite Editor | Sprite sheet |
-| Characters | 2D / 2.5D | PNG (rig‑ready) |
-| 3D props | URP · HDRP | FBX + PBR |
-| Textures | Any pipeline | Seamless PBR |
-| Skyboxes | Scene lighting | Panoramic |
+- **Real AI, in the Editor** — calls the Anthropic **Messages API** directly with `UnityWebRequest`.
+  No backend, no extra packages.
+- **Bring your own key** — your Anthropic key is stored in Unity's EditorPrefs (local only) and
+  billed to your account.
+- **Reliable output** — uses **structured outputs** (`output_config.format`) so the model returns a
+  strict JSON set of files the plugin writes to disk.
+- **Self-bootstrapping games** — each result includes a `[RuntimeInitializeOnLoadMethod]` entry
+  point that constructs the camera, player, level and UI from code, so Play just works.
+- **Model picker** — defaults to `claude-opus-5`; switch to `claude-sonnet-5` / `claude-haiku-4-5`
+  for faster/cheaper runs.
 
-## 🚀 Run it
+Full setup and troubleshooting: [`unity/UnityGUI/README.md`](./unity/UnityGUI/README.md).
 
-**Option A — just open it.** Double‑click `index.html`. The app is 100 % client‑side.
+```
+unity/UnityGUI/Editor/
+├── UnityGUIWindow.cs        # the Editor window (Window ▸ UnityGUI ▸ …)
+├── GameGenerator.cs         # system prompt, output schema, file writing
+├── ClaudeClient.cs          # Anthropic Messages API client (UnityWebRequest)
+└── UnityGUI.Editor.asmdef    # Editor-only assembly definition
+```
 
-**Option B — serve it** (recommended, avoids any `file://` quirks):
+## 🌐 The companion website
+
+A self-contained static site that presents the plugin and gates a **setup console** behind sign-in.
+
+- **Landing** (`index.html`) — hero, genres you can generate, how-it-works, features, showcase,
+  honest pricing (free plugin + your own API usage), FAQ.
+- **Console** (`studio.html`) — **Sign in with Google**, then a step-by-step guide to install the
+  plugin, get an API key, and generate your first game. The owner account
+  (`servankangal21@gmail.com`) is flagged **PRO / unlimited**.
+
+### Google sign-in setup
+
+Real Google Sign-In uses [Google Identity Services](https://developers.google.com/identity/gsi/web).
+To enable it:
+
+1. Create an OAuth **Client ID** in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   (type *Web application*), and add your origin (e.g. `http://localhost:8080`) as an
+   **Authorized JavaScript origin**.
+2. Paste the Client ID into [`js/config.js`](./js/config.js):
+
+   ```js
+   window.UnityGUIConfig = {
+     GOOGLE_CLIENT_ID: "123456789-abc.apps.googleusercontent.com",
+     OWNER_EMAIL: "servankangal21@gmail.com", // gets unlimited / PRO
+     FREE_CREDITS: 25,
+   };
+   ```
+
+Until a Client ID is set, the console runs in a clearly-marked **demo login** (enter an email) so
+you can try it without setup. Sign in with the owner email to see the PRO/unlimited state.
+
+> ⚠️ **Note on security:** the website's sign-in is a client-side gate — fine for a personal/demo
+> build, not tamper-proof. The plugin itself needs no login; it authenticates to Anthropic with
+> your own API key.
+
+### Run the site
 
 ```bash
-npm start          # zero-dependency Node server → http://localhost:8080
+npm start                 # zero-dependency static server → http://localhost:8080
 # or
 python3 -m http.server 8080
 ```
 
-Then open <http://localhost:8080>.
+## Notes
 
-## 🗂 Project structure
-
-```
-UnityGui/
-├── index.html          # Landing / marketing page
-├── studio.html         # The generation Studio (the app)
-├── css/
-│   ├── base.css        # Design tokens, reset, buttons, primitives
-│   ├── landing.css     # Landing page styles
-│   └── studio.css      # Studio styles
-├── js/
-│   ├── data.js         # Asset-type catalog, style presets, pricing, FAQ
-│   ├── generator.js    # Procedural asset-generation engine (the core)
-│   ├── main.js         # Landing page behaviour
-│   └── studio.js       # Studio app logic (state, credits, history)
-├── assets/             # Logo & favicon (SVG)
-├── serve.js            # Tiny static file server (no deps)
-└── package.json
-```
-
-## 🧠 How generation works
-
-The generator (`js/generator.js`) ships a fully working **procedural mock** that renders SVG
-previews of each asset type from the prompt. It is **deterministic per `(prompt + seed)`** — the
-same seed always produces the same visual, so results are reproducible, and locking a seed lets you
-iterate. A seeded PRNG drives shape/layout/palette choices per asset type.
-
-> This keeps the whole app runnable with **zero API keys**, while looking and behaving like the
-> real product.
-
-### Plugging in a real AI backend
-
-There is a single, documented seam. In `js/generator.js`:
-
-```js
-// 1. Implement remoteGenerate to call your image/3D backend:
-UnityGUIGen.remoteGenerate = async (type, prompt, opts) => {
-  const res = await fetch("/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, prompt, ...opts }),
-  });
-  const { imageUrl } = await res.json();
-  return { dataUrl: imageUrl, meta: { type, prompt } };
-};
-
-// 2. Flip the flag near the top of the file:
-const USE_REMOTE = true;
-```
-
-The UI, credits, history, favourites and download flows all work unchanged — they only care about
-the `{ svg | dataUrl, meta }` shape returned by the generator.
-
-## ⌨️ Studio shortcuts & features
-
-- **⌘/Ctrl + Enter** — generate.
-- **Style presets & seeds** — reproducible, consistent looks across asset types.
-- **Credits** — client‑side demo credits (25 to start); "Top up demo credits" resets them.
-- **Local history & favourites** — persisted in `localStorage`, restored on reload.
-- **Download** — each result exports as an SVG you can import into Unity as a sprite.
-
-## 📝 Notes
-
-UnityGUI is an independent, educational clone of the ForgeGUI concept and is **not affiliated with
-Unity Technologies or ForgeGUI**. "Unity", "uGUI", "URP" and "HDRP" are referenced descriptively.
+UnityGUI is an independent, educational project and is **not affiliated with Unity Technologies,
+Anthropic, or ForgeGUI**. "Unity", "uGUI", "URP" and "HDRP" are referenced descriptively.
 
 ## License
 

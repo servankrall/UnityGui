@@ -43,20 +43,18 @@
 
   /* ---- Hero preview thumbs -------------------------------------------- */
   const strip = $("#hero-strip");
-  if (strip && Gen && D) {
+  if (strip && Gen) {
     const picks = [
-      ["ui", "Sci-fi HUD neon blue"],
-      ["character", "Fantasy knight hero"],
-      ["icon", "Fire spell ability icon"],
-      ["thumbnail", "EPIC QUEST banner"],
-      ["model3d", "Low-poly treasure chest"],
+      ["ui", "Sci-fi HUD neon blue", "HUD"],
+      ["character", "Fantasy knight hero", "Player"],
+      ["icon", "Fire spell ability icon", "Pickup"],
+      ["thumbnail", "EPIC QUEST banner", "Title screen"],
+      ["model3d", "Low-poly treasure chest", "Level prop"],
     ];
     Promise.all(picks.map(([t, p], k) => Gen.generateOne(t, p, { seed: 100 + k * 13 })))
       .then(results => {
-        strip.innerHTML = results.map((res, k) => {
-          const label = D.ASSET_TYPES.find(a => a.id === picks[k][0]).name;
-          return `<div class="hero-thumb reveal">${res.svg}<span class="ht-label">${label}</span></div>`;
-        }).join("");
+        strip.innerHTML = results.map((res, k) =>
+          `<div class="hero-thumb reveal">${res.svg}<span class="ht-label">${picks[k][2]}</span></div>`).join("");
         $$(".hero-thumb", strip).forEach((el, k) => setTimeout(() => el.classList.add("in"), 120 * k));
       });
   }
@@ -64,8 +62,8 @@
   /* ---- Asset types grid ----------------------------------------------- */
   const grid = $("#asset-grid");
   if (grid && D) {
-    grid.innerHTML = D.ASSET_TYPES.map(a => `
-      <a class="asset-card reveal" href="studio.html?type=${a.id}">
+    grid.innerHTML = D.GENRES.map(a => `
+      <a class="asset-card reveal" href="studio.html">
         <span class="badge ac-tag">${a.short}</span>
         <span class="ac-icon" style="color:var(--violet-2)">${a.icon}</span>
         <h3>${a.name}</h3>
@@ -76,27 +74,25 @@
 
   /* ---- Showcase gallery ------------------------------------------------ */
   const showcase = $("#showcase-grid");
-  if (showcase && Gen && D) {
+  if (showcase && Gen) {
     const items = [
-      ["ui", "Cyberpunk pause menu purple glass"],
-      ["icon", "Glowing lightning icon"],
-      ["character", "Cute mage character"],
-      ["sprite", "Green slime enemy"],
-      ["thumbnail", "SPACE RAIDERS banner"],
-      ["texture", "Seamless stone floor"],
-      ["model3d", "Modular sci-fi crate"],
-      ["skybox", "Sunset desert sky"],
-      ["icon", "Health potion icon"],
-      ["ui", "Mobile start screen cartoon"],
-      ["character", "Robot companion"],
-      ["sprite", "Retro coin pickup"],
+      ["ui", "Pause menu", "Twin-stick shooter"],
+      ["icon", "Ability pickup", "Platformer"],
+      ["character", "Player avatar", "Top-down arcade"],
+      ["sprite", "Slime enemy", "Runner"],
+      ["thumbnail", "SPACE RAIDERS", "Title screen"],
+      ["texture", "Dungeon floor", "Maze"],
+      ["model3d", "Level crate", "Platformer"],
+      ["skybox", "Sky backdrop", "First-person maze"],
+      ["icon", "Health pickup", "Brick breaker"],
+      ["ui", "Start screen", "Arcade"],
+      ["character", "Companion bot", "Shooter"],
+      ["sprite", "Coin pickup", "Runner"],
     ];
     Promise.all(items.map(([t, p], k) => Gen.generateOne(t, p, { seed: 40 + k * 17 })))
       .then(results => {
-        showcase.innerHTML = results.map((res, k) => {
-          const label = D.ASSET_TYPES.find(a => a.id === items[k][0]).name;
-          return `<div class="sc-item">${res.svg}<div class="sc-meta">“${items[k][1]}” · ${label}</div></div>`;
-        }).join("");
+        showcase.innerHTML = results.map((res, k) =>
+          `<div class="sc-item">${res.svg}<div class="sc-meta">${items[k][1]} · ${items[k][2]}</div></div>`).join("");
       });
   }
 
