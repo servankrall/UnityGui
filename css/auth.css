@@ -1,0 +1,98 @@
+/* =========================================================================
+   UnityGUI — Auth (login overlay) + Console styles
+   ========================================================================= */
+
+.gate {
+  position: fixed; inset: 0; z-index: 80;
+  display: grid; place-items: center; padding: 24px;
+  background:
+    radial-gradient(900px 500px at 50% -10%, rgba(124,92,255,.25), transparent 60%),
+    var(--bg);
+}
+.gate-card {
+  width: min(420px, 100%); text-align: center;
+  background: linear-gradient(180deg, var(--surface), var(--bg-elev));
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); padding: 2.2rem 1.8rem;
+}
+.gate-card .g-logo { display: flex; justify-content: center; margin-bottom: 1.2rem; }
+.gate-card .g-logo img { height: 30px; }
+.gate-card h1 { font-size: 1.4rem; margin-bottom: .5rem; }
+.gate-card p { color: var(--text-muted); font-size: .95rem; margin-bottom: 1.6rem; }
+.gate-btn { display: flex; justify-content: center; min-height: 44px; }
+
+/* Google Identity Services button gets injected here; demo fallback below */
+.demo-login { text-align: left; }
+.demo-login .demo-note {
+  font-size: .8rem; color: var(--ember-2); background: rgba(255,122,69,.08);
+  border: 1px solid rgba(255,122,69,.25); border-radius: var(--r-sm);
+  padding: .5rem .7rem; margin-bottom: .9rem;
+}
+.demo-login .demo-note code { font-family: var(--mono); font-size: .78rem; }
+.demo-input {
+  width: 100%; font: inherit; font-size: .95rem; margin-bottom: .7rem;
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: .7rem .85rem;
+}
+.demo-input:focus { outline: none; border-color: var(--violet); }
+.demo-hint { font-size: .8rem; color: var(--text-dim); margin-top: .8rem; text-align: center; }
+.gate-foot { margin-top: 1.4rem; font-size: .78rem; color: var(--text-dim); }
+.gate-foot a { color: var(--violet-2); }
+
+/* ---- Console (post-login) --------------------------------------------- */
+.console { max-width: 920px; margin: 0 auto; padding: 28px 22px 80px; }
+
+.console-top {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 28px; flex-wrap: wrap;
+}
+.console-top .nav-logo img { height: 26px; }
+.console-top .spacer { flex: 1; }
+.userchip {
+  display: inline-flex; align-items: center; gap: .6rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-pill); padding: .35rem .35rem .35rem .85rem;
+}
+.userchip .u-name { font-size: .88rem; font-weight: 600; }
+.userchip .u-badge {
+  font-size: .68rem; font-weight: 700; padding: .15rem .5rem; border-radius: var(--r-pill);
+  background: var(--grad-brand); color: #0a0d14;
+}
+.userchip .u-avatar {
+  width: 30px; height: 30px; border-radius: 50%; object-fit: cover;
+  background: var(--surface-3); display: grid; place-items: center;
+  font-size: .8rem; font-weight: 700; color: var(--text);
+}
+
+.console h1 { font-size: clamp(1.6rem, 4vw, 2.3rem); }
+.console .lead { color: var(--text-muted); max-width: 60ch; margin-bottom: 2rem; }
+
+.step-card {
+  display: grid; grid-template-columns: 40px 1fr; gap: 1rem; align-items: start;
+  padding: 1.4rem 1.5rem; margin-bottom: 14px;
+}
+.step-card .sc-n {
+  width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+  font-weight: 800; background: var(--grad-brand); color: #0a0d14;
+}
+.step-card h3 { font-size: 1.08rem; margin-bottom: .35rem; }
+.step-card p { color: var(--text-muted); font-size: .93rem; margin: 0; }
+.step-card code, .codeblock {
+  font-family: var(--mono); font-size: .82rem;
+}
+.codeblock {
+  display: block; margin-top: .7rem; padding: .7rem .9rem; overflow-x: auto;
+  background: var(--bg); border: 1px solid var(--border-soft); border-radius: var(--r-sm);
+  color: var(--cyan); white-space: pre;
+}
+.step-card .sc-actions { margin-top: .8rem; display: flex; gap: .6rem; flex-wrap: wrap; }
+
+.owner-banner {
+  display: flex; align-items: center; gap: .7rem; margin-bottom: 22px;
+  padding: .8rem 1.1rem; border-radius: var(--r-md);
+  background: rgba(124,92,255,.09); border: 1px solid var(--violet);
+}
+.owner-banner .ob-badge {
+  font-size: .7rem; font-weight: 800; padding: .2rem .6rem; border-radius: var(--r-pill);
+  background: var(--grad-brand); color: #0a0d14; flex-shrink: 0;
+}
+.owner-banner span { font-size: .9rem; color: var(--text); }

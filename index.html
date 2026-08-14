@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UnityGUI — Generate Unity Games from a Prompt</title>
+  <meta name="description" content="An AI game generator that lives inside the Unity Editor. Describe a game, and UnityGUI writes ready-to-run C# into your project — press Play and it works. Powered by Claude." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/landing.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <header class="nav">
+    <div class="container">
+      <a class="nav-logo" href="index.html" aria-label="UnityGUI home">
+        <img src="assets/logo.svg" alt="UnityGUI" />
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#assets">Genres</a>
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#showcase">Showcase</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-ghost btn-sm" href="studio.html">Sign in</a>
+        <a class="btn btn-primary btn-sm" href="studio.html">Open Console →</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="container">
+      <span class="badge badge-dot">AI game generation inside Unity</span>
+      <h1>Describe a game.<br /><span class="gradient-text">Play it in Unity.</span></h1>
+      <p class="lead">
+        UnityGUI is an AI game generator that lives right in the Unity Editor. Write one sentence and
+        it generates ready-to-run C# into your project — press Play and your game just works. Powered by Claude.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="studio.html">Get the plugin →</a>
+        <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+      </div>
+      <p class="hero-note">Runs in the Editor · Bring your own Anthropic key · Unity 2021 LTS+</p>
+
+      <!-- prompt demo -->
+      <div class="prompt-demo">
+        <span class="pd-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+        </span>
+        <span class="pd-text" id="pd-text"></span>
+        <select aria-label="Model" disabled>
+          <option>opus-5</option>
+        </select>
+        <a class="btn btn-ember btn-sm" href="studio.html">Generate</a>
+      </div>
+
+      <!-- floating preview thumbs -->
+      <div class="hero-strip">
+        <div class="hero-strip-track" id="hero-strip"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats">
+    <div class="container">
+      <div class="stat"><div class="num gradient-text">1</div><div class="lbl">Sentence in</div></div>
+      <div class="stat"><div class="num gradient-text">C#</div><div class="lbl">Ready-to-run out</div></div>
+      <div class="stat"><div class="num gradient-text">▶</div><div class="lbl">Press Play, it works</div></div>
+      <div class="stat"><div class="num gradient-text">0</div><div class="lbl">Manual scene setup</div></div>
+    </div>
+  </section>
+
+  <!-- ASSET TYPES -->
+  <section class="section" id="assets">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">One tool, many kinds of game</span>
+        <h2>Genres you can generate</h2>
+        <p>Describe the game you want and UnityGUI writes it. From runners to tower defense — each result is a complete, playable Unity scene built from code.</p>
+      </div>
+      <div class="asset-grid" id="asset-grid"></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how" style="background:var(--bg-elev);border-block:1px solid var(--border-soft)">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Install → Describe → Play</span>
+        <h2>From idea to a playable game in three steps</h2>
+      </div>
+      <div class="steps">
+        <div class="step card reveal">
+          <div class="step-n">1</div>
+          <h3>Add the plugin</h3>
+          <p>Drop the UnityGUI folder into your project’s Assets. A new window appears under <b>Window ▸ UnityGUI</b>. Paste your Anthropic API key once.</p>
+        </div>
+        <div class="step card reveal">
+          <div class="step-n">2</div>
+          <h3>Describe your game</h3>
+          <p>Type it in plain English — “a 2D endless runner where a cube jumps over obstacles, space to jump.” Pick a model and hit Generate.</p>
+        </div>
+        <div class="step card reveal">
+          <div class="step-n">3</div>
+          <h3>Press Play</h3>
+          <p>Claude writes ready-to-run C# into your project. Open an empty scene, press Play, and the game bootstraps itself. Edit the code freely.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Built for Unity, not against it</span>
+        <h2>Real games, right in the Editor</h2>
+      </div>
+
+      <div class="feature-row reveal">
+        <div class="fr-copy">
+          <span class="eyebrow">In-Editor plugin</span>
+          <h2>Generate without leaving Unity</h2>
+          <p>A tidy Editor window (<b>Window ▸ UnityGUI</b>) takes your prompt and drops complete C# scripts into your project. No web dashboard, no copy-paste, no exporting.</p>
+          <ul class="fr-list">
+            <li><span class="chk">✔</span> One-window prompt → generate → play</li>
+            <li><span class="chk">✔</span> Editor-only code — never ships in your build</li>
+            <li><span class="chk">✔</span> Pick your model per generation</li>
+          </ul>
+        </div>
+        <div class="fr-media" id="feat-ui"></div>
+      </div>
+
+      <div class="feature-row reverse reveal">
+        <div class="fr-copy">
+          <span class="eyebrow">Real assets, not just code</span>
+          <h2>Scenes, prefabs &amp; generated art</h2>
+          <p>Pro mode writes a real <b>.unity scene</b>, <b>prefabs</b>, and procedurally-generated <b>art</b> (sprites, materials, meshes) wired into a playable scene — open it and press Play. Prefer one self-contained script set? Lite mode does that too.</p>
+          <ul class="fr-list">
+            <li><span class="chk">✔</span> Saved .unity scene + prefabs in your project</li>
+            <li><span class="chk">✔</span> Procedural art assets — no downloads</li>
+            <li><span class="chk">✔</span> Everything editable in the Inspector</li>
+          </ul>
+        </div>
+        <div class="fr-media" id="feat-3d"></div>
+      </div>
+
+      <div class="feature-row reveal">
+        <div class="fr-copy">
+          <span class="eyebrow">Powered by Claude</span>
+          <h2>Bring your own key — and your own backend</h2>
+          <p>Generation runs on the real Claude API with your own Anthropic key, stored locally in Unity. Want to swap in a different model or pipeline? The generation seam and JSON schema are documented and easy to extend.</p>
+          <ul class="fr-list">
+            <li><span class="chk">✔</span> Direct Messages API call (no middleman)</li>
+            <li><span class="chk">✔</span> Structured outputs for reliable code</li>
+            <li><span class="chk">✔</span> Open source &amp; MIT-licensed</li>
+          </ul>
+        </div>
+        <div class="fr-media" id="feat-batch"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE -->
+  <section class="section" id="showcase" style="background:var(--bg-elev);border-block:1px solid var(--border-soft)">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">The kind of thing you get</span>
+        <h2>From one sentence to a scene</h2>
+        <p>Illustrative concepts across a few genres — the plugin generates the code that makes them run.</p>
+      </div>
+      <div class="showcase" id="showcase-grid"></div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="section" id="pricing">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Honest pricing</span>
+        <h2>The plugin is free — you pay only for what you generate</h2>
+        <p>UnityGUI is open source. Generation runs on your own Anthropic key, so you pay Anthropic for usage and nothing to us.</p>
+      </div>
+      <div class="pricing-grid" id="pricing-grid"></div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq-section" style="background:var(--bg-elev);border-block:1px solid var(--border-soft)">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Good to know</span>
+        <h2>Frequently asked questions</h2>
+      </div>
+      <div class="faq" id="faq"></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-banner reveal">
+        <span class="eyebrow">Your next game is one sentence away</span>
+        <h2>Prototype a game before your coffee’s cold</h2>
+        <p>Add the plugin, paste your key, and generate playable Unity games from a prompt. Free and open source.</p>
+        <a class="btn btn-primary btn-lg" href="studio.html">Get the plugin →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a class="nav-logo" href="index.html"><img src="assets/logo.svg" alt="UnityGUI" /></a>
+          <p>An AI game generator for the Unity Editor. Describe a game, generate the code, press Play. Powered by Claude.</p>
+        </div>
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="studio.html">Console</a></li>
+            <li><a href="#assets">Genres</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#showcase">Showcase</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#faq-section">FAQ</a></li>
+            <li><a href="https://github.com/servankrall/UnityGui/tree/main/unity/UnityGUI" target="_blank" rel="noopener">The Unity plugin</a></li>
+            <li><a href="https://docs.anthropic.com/en/api/getting-started" target="_blank" rel="noopener">Claude API docs</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Terms</a></li>
+            <li><a href="#">Privacy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span id="year">2026</span> UnityGUI. Not affiliated with Unity Technologies or Anthropic. A Unity-focused take on the ForgeGUI concept.</span>
+        <span class="mono">Made for game devs · v1.0</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    /* feature media previews */
+    (function () {
+      const G = window.UnityGUIGen;
+      const set = (id, type, prompt, seed) => {
+        const el = document.getElementById(id);
+        if (el && G) G.generateOne(type, prompt, { seed }).then(r => { el.innerHTML = r.svg; });
+      };
+      set("feat-ui", "ui", "Sci-fi inventory HUD neon", 7);
+      set("feat-3d", "model3d", "Low-poly modular crate", 21);
+      set("feat-batch", "thumbnail", "EPIC QUEST hero banner", 33);
+    })();
+  </script>
+</body>
+</html>

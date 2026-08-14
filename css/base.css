@@ -1,0 +1,175 @@
+/* =========================================================================
+   UnityGUI — Base design system
+   Tokens, reset, typography, buttons, and shared primitives.
+   Self-contained, no external dependencies.
+   ========================================================================= */
+
+:root {
+  /* Surfaces */
+  --bg:            #0a0d14;
+  --bg-elev:       #0f1420;
+  --surface:       #141a28;
+  --surface-2:     #1a2233;
+  --surface-3:     #212b40;
+  --border:        #263048;
+  --border-soft:   #1c2438;
+
+  /* Text */
+  --text:          #eaf0fb;
+  --text-muted:    #9aa6bd;
+  --text-dim:      #6b768e;
+
+  /* Brand — "forge" ember + AI violet/cyan */
+  --violet:        #7c5cff;
+  --violet-2:      #a68bff;
+  --cyan:          #22d3ee;
+  --ember:         #ff7a45;
+  --ember-2:       #ff9d6b;
+  --green:         #34d399;
+  --pink:          #f472b6;
+
+  /* Gradients */
+  --grad-brand: linear-gradient(135deg, #7c5cff 0%, #22d3ee 100%);
+  --grad-ember: linear-gradient(135deg, #ff7a45 0%, #ff4d8d 100%);
+  --grad-hero:  radial-gradient(1200px 600px at 70% -10%, rgba(124,92,255,.28), transparent 60%),
+                radial-gradient(900px 500px at 10% 10%, rgba(34,211,238,.16), transparent 55%);
+
+  /* Effects */
+  --ring: 0 0 0 1px var(--border);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 8px 30px rgba(0,0,0,.45);
+  --shadow-lg: 0 24px 70px rgba(0,0,0,.55);
+  --glow-violet: 0 0 40px rgba(124,92,255,.35);
+  --glow-cyan:   0 0 40px rgba(34,211,238,.30);
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 26px;
+  --r-pill: 999px;
+
+  /* Layout */
+  --maxw: 1180px;
+  --nav-h: 68px;
+
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Code",
+          Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 { line-height: 1.15; margin: 0 0 .5em; font-weight: 700; letter-spacing: -0.02em; }
+h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); }
+h2 { font-size: clamp(1.8rem, 4vw, 2.9rem); }
+h3 { font-size: 1.25rem; }
+p  { margin: 0 0 1rem; }
+a  { color: inherit; text-decoration: none; }
+img, svg { max-width: 100%; display: block; }
+ul { margin: 0; padding: 0; list-style: none; }
+:focus-visible { outline: 2px solid var(--violet-2); outline-offset: 2px; border-radius: 4px; }
+
+.container { width: 100%; max-width: var(--maxw); margin-inline: auto; padding-inline: 22px; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: .5rem;
+  font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--violet-2);
+}
+.text-muted { color: var(--text-muted); }
+.gradient-text {
+  background: var(--grad-brand);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.ember-text {
+  background: var(--grad-ember);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+
+/* ---- Buttons ---------------------------------------------------------- */
+.btn {
+  --btn-bg: var(--surface-2);
+  display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+  font: inherit; font-weight: 600; font-size: .95rem;
+  padding: .72rem 1.25rem; border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--btn-bg);
+  color: var(--text); cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+  white-space: nowrap; user-select: none;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.btn-primary {
+  border: none;
+  background: var(--grad-brand);
+  color: #0a0d14; font-weight: 700;
+  box-shadow: var(--glow-violet);
+}
+.btn-primary:hover { box-shadow: 0 0 55px rgba(124,92,255,.55); }
+
+.btn-ember {
+  border: none;
+  background: var(--grad-ember);
+  color: #1a0e08; font-weight: 700;
+  box-shadow: 0 0 40px rgba(255,122,69,.35);
+}
+.btn-ghost { background: transparent; border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface); border-color: var(--surface-3); }
+.btn-sm { padding: .5rem .9rem; font-size: .85rem; }
+.btn-lg { padding: .95rem 1.7rem; font-size: 1.02rem; }
+.btn-block { width: 100%; }
+
+/* ---- Badges / chips --------------------------------------------------- */
+.badge {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .3rem .7rem; border-radius: var(--r-pill);
+  font-size: .74rem; font-weight: 600; letter-spacing: .02em;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted);
+}
+.badge-dot::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+}
+
+/* ---- Cards ------------------------------------------------------------ */
+.card {
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg-elev) 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Sections --------------------------------------------------------- */
+section { position: relative; }
+.section { padding: clamp(56px, 9vw, 120px) 0; }
+.section-head { max-width: 720px; margin: 0 auto clamp(32px, 5vw, 60px); text-align: center; }
+.section-head p { color: var(--text-muted); font-size: 1.08rem; }
+
+/* ---- Utility ---------------------------------------------------------- */
+.hidden { display: none !important; }
+.divider { height: 1px; background: var(--border-soft); border: 0; margin: 0; }
+.mono { font-family: var(--mono); }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

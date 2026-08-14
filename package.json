@@ -1,0 +1,13 @@
+{
+  "name": "unitygui",
+  "version": "1.0.0",
+  "description": "A Unity-focused clone of the ForgeGUI concept — describe a prompt, generate Unity-ready UI, icons, sprites, 3D props, textures and skyboxes.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node serve.js",
+    "dev": "node serve.js 8080"
+  },
+  "keywords": ["unity", "ai", "asset-generation", "gui", "ugui", "ui-toolkit", "game-dev", "forgegui"],
+  "license": "MIT",
+  "private": true
+}

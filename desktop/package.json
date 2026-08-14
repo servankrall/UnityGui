@@ -1,0 +1,36 @@
+{
+  "name": "unitygui-desktop",
+  "productName": "UnityGUI",
+  "version": "1.0.0",
+  "description": "Generate Unity games from a prompt — a one-click desktop app powered by Claude.",
+  "main": "main.js",
+  "author": "UnityGUI",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never",
+    "dist:dir": "electron-builder --win --dir --publish never"
+  },
+  "devDependencies": {
+    "electron": "^31.7.6",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.unitygui.app",
+    "productName": "UnityGUI",
+    "artifactName": "UnityGUI-Setup-${version}.${ext}",
+    "files": ["main.js", "preload.js", "renderer/**/*", "assets/**/*"],
+    "directories": { "output": "dist" },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

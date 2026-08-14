@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Console — UnityGUI</title>
+  <meta name="description" content="Sign in to set up the UnityGUI plugin and start generating Unity games from prompts." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body>
+
+  <!-- LOGIN GATE (shown until signed in) -->
+  <div class="gate" id="gate">
+    <div class="gate-card">
+      <div class="g-logo"><img src="assets/logo.svg" alt="UnityGUI" /></div>
+      <h1>Sign in to UnityGUI</h1>
+      <p>Sign in to open your console — set up the Unity plugin and start generating games from prompts.</p>
+      <div class="gate-btn" id="google-btn"></div>
+      <div class="gate-foot">
+        By continuing you agree this is a demo project.
+        <br /><a href="index.html">← Back to home</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSOLE (shown after sign in) -->
+  <main class="console hidden" id="console">
+    <div class="console-top">
+      <a class="nav-logo" href="index.html"><img src="assets/logo.svg" alt="UnityGUI" /></a>
+      <span class="badge badge-dot">Signed in</span>
+      <div class="spacer"></div>
+      <div class="userchip" id="userchip"></div>
+      <button class="btn btn-ghost btn-sm" id="logout">Sign out</button>
+    </div>
+
+    <div class="owner-banner hidden" id="owner-banner">
+      <span class="ob-badge">PRO</span>
+      <span>You're signed in as the owner account — <b>unlimited access</b> unlocked.</span>
+    </div>
+
+    <h1>Welcome<span id="welcome-name"></span> 👋</h1>
+    <p class="lead">Get the Unity plugin running in four steps. It talks straight to the Claude API
+      from inside the Editor, so there's nothing to host — you bring your own Anthropic key.</p>
+
+    <div class="step-card card">
+      <div class="sc-n">1</div>
+      <div>
+        <h3>Add the plugin to your Unity project</h3>
+        <p>Copy the <code>unity/UnityGUI</code> folder from the repo into your project's
+          <code>Assets/</code> folder. It's Editor-only code, so it never ships in your build.</p>
+        <div class="sc-actions">
+          <a class="btn btn-primary btn-sm" id="repo-link" href="https://github.com/servankrall/UnityGui" target="_blank" rel="noopener">Open the repo →</a>
+          <a class="btn btn-ghost btn-sm" href="https://github.com/servankrall/UnityGui/tree/main/unity/UnityGUI" target="_blank" rel="noopener">View the plugin folder</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card card">
+      <div class="sc-n">2</div>
+      <div>
+        <h3>Get an Anthropic API key</h3>
+        <p>Create a key in the Anthropic Console and paste it into the plugin window. Your key stays
+          on your machine (Unity EditorPrefs) and is billed to your own Anthropic account.</p>
+        <div class="sc-actions">
+          <a class="btn btn-ember btn-sm" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Create an API key →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card card">
+      <div class="sc-n">3</div>
+      <div>
+        <h3>Open the generator in Unity</h3>
+        <p>In Unity's top menu, open:</p>
+        <code class="codeblock">Window ▸ UnityGUI ▸ AI Game Generator</code>
+        <p style="margin-top:.7rem">Paste your key, pick a model (<b>claude-opus-5</b> by default), and describe your game.</p>
+      </div>
+    </div>
+
+    <div class="step-card card">
+      <div class="sc-n">4</div>
+      <div>
+        <h3>Generate &amp; press Play</h3>
+        <p>Hit <b>Generate</b>. The plugin writes ready-to-run C# into
+          <code>Assets/UnityGUI/Generated/</code>. Open an empty scene and press <b>Play</b> —
+          the generated code bootstraps the whole game itself.</p>
+        <code class="codeblock">"A 2D endless runner where a cube jumps over obstacles.
+Space to jump, score for distance."</code>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script async defer src="https://accounts.google.com/gsi/client"></script>
+  <script>
+    (function () {
+      const Auth = window.UnityGUIAuth;
+      const CFG = window.UnityGUIConfig || {};
+      const $ = (s) => document.querySelector(s);
+
+      function initials(name, email) {
+        const base = (name || email || "U").trim();
+        const parts = base.split(/\s+/);
+        return (parts.length > 1 ? parts[0][0] + parts[1][0] : base.slice(0, 2)).toUpperCase();
+      }
+
+      function render(user) {
+        const gate = $("#gate"), consoleEl = $("#console");
+        if (!user) {
+          gate.classList.remove("hidden");
+          consoleEl.classList.add("hidden");
+          Auth.renderButton($("#google-btn"), { width: 280 });
+          return;
+        }
+        gate.classList.add("hidden");
+        consoleEl.classList.remove("hidden");
+
+        // user chip
+        const avatar = user.picture
+          ? `<img class="u-avatar" src="${user.picture}" alt="" referrerpolicy="no-referrer" />`
+          : `<span class="u-avatar">${initials(user.name, user.email)}</span>`;
+        $("#userchip").innerHTML =
+          `<span class="u-name">${user.name || user.email}</span>` +
+          (user.owner ? `<span class="u-badge">PRO</span>` : "") + avatar;
+
+        $("#welcome-name").textContent = user.name ? (", " + user.name.split(" ")[0]) : "";
+        $("#owner-banner").classList.toggle("hidden", !user.owner);
+      }
+
+      Auth.onChange(render);
+      render(Auth.getUser());
+
+      $("#logout").addEventListener("click", () => Auth.logout());
+    })();
+  </script>
+</body>
+</html>
