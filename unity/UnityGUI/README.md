@@ -1,13 +1,13 @@
 # UnityGUI — AI Game Generator (Unity Editor plugin)
 
-Describe a game in plain English, press **Generate**, and Claude builds it in
-your Unity project. In **Pro** mode it generates a real **`.unity` scene**,
+Describe a game in plain English, press **Generate**, and a **free AI** builds it
+in your Unity project. In **Pro** mode it generates a real **`.unity` scene**,
 **prefabs**, and **procedural art assets** (PNG sprites, materials, meshes) —
 open the scene and press **Play**.
 
 This is the Unity-side companion to the [UnityGUI](../../README.md) project. It
-talks directly to the **Anthropic Messages API** from inside the Editor using
-`UnityWebRequest` — no extra packages, no backend, no build step.
+talks directly to a **free AI provider** from inside the Editor using
+`UnityWebRequest` — **no paid Claude key**, no extra packages, no backend, no build step.
 
 ## Two output modes
 
@@ -27,21 +27,24 @@ talks directly to the **Anthropic Messages API** from inside the Editor using
 That's it — the plugin is Editor-only code (guarded by an assembly definition),
 so it never ships in your game build.
 
-## Set up your API key
+## Connect a free provider
 
-1. Get an Anthropic API key: <https://console.anthropic.com/settings/keys>.
-2. Open **Window ▸ UnityGUI ▸ AI Game Generator** and paste the key into the
-   **Anthropic API key** field.
+Open **Window ▸ UnityGUI ▸ AI Game Generator**, pick a **Provider**, and paste its
+**free** key (Ollama needs none):
 
-The key is stored in **EditorPrefs on your machine only** — it is never written
-to a file in the project and never committed. Usage is billed by Anthropic to
-your own account (this is the "bring your own key" model).
+| Provider | Cost | Free key |
+|---|---|---|
+| **Google Gemini** | Free tier, no credit card | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| **Groq** | Free, very fast | [console.groq.com](https://console.groq.com/keys) |
+| **Ollama** | 100% free, offline, no key | install [ollama.com](https://ollama.com/download), then `ollama pull qwen2.5-coder` |
+
+The key is stored in **EditorPrefs on your machine only** — never written to a
+file in the project and never committed.
 
 ## Generate a game
 
-1. Pick a **model** (default `claude-opus-5`; switch to `claude-sonnet-5` or
-   `claude-haiku-4-5` for faster/cheaper runs), an **Output** mode (Pro/Lite),
-   and a **Style** (Auto / 2D / 3D).
+1. Pick a **Provider** + **Model**, an **Output** mode (Pro/Lite), and a
+   **Style** (Auto / 2D / 3D).
 2. **Describe your game** (or click *Insert an idea*), e.g.
 
    > A 2D endless runner where a cube jumps over incoming obstacles.
@@ -55,9 +58,9 @@ your own account (this is the "bring your own key" model).
 
 ## How it works
 
-- The plugin sends your prompt plus a system prompt to `POST /v1/messages`, using
-  **structured outputs** (`output_config.format`) so the model returns a strict
-  JSON object of `{ path, content }` files — reliably parseable.
+- The plugin sends your prompt plus a system prompt to your chosen free provider
+  (Gemini / Groq / Ollama) in **JSON mode**, so the model returns a strict JSON
+  object of `{ path, content }` files — reliably parseable.
 - **Pro mode** asks the model for gameplay scripts *and* an Editor
   `SceneBuilder.BuildAll()`. After the new scripts compile, the plugin invokes
   that builder via reflection to create real assets:
@@ -75,9 +78,9 @@ your own account (this is the "bring your own key" model).
 UnityGUI/
 └── Editor/
     ├── UnityGUIWindow.cs          # the Editor window (Window ▸ UnityGUI ▸ …)
-    ├── GameGenerator.cs           # prompts, schema, file writing, build handoff
+    ├── GameGenerator.cs           # prompts, file writing, build handoff
     ├── GeneratedBuildRunner.cs    # runs SceneBuilder after the recompile (Pro)
-    ├── ClaudeClient.cs            # Messages API client (UnityWebRequest)
+    ├── LLMClient.cs               # free-provider client (Gemini/Groq/Ollama)
     └── UnityGUI.Editor.asmdef     # Editor-only assembly definition
 ```
 
@@ -87,7 +90,8 @@ UnityGUI/
   simple materials/meshes) — it doesn't download or paint bitmap art. That keeps
   results reliable and dependency-free.
 - Results vary with the prompt and model. Be specific about controls, objective,
-  and win/lose conditions. `claude-opus-5` gives the best Pro-mode results.
+  and win/lose conditions. A capable model (e.g. Gemini 2.0 Flash or Groq's
+  Llama 3.3 70B) gives the best Pro-mode results.
 - If the generated scripts fail to compile, the window says so — open the Console
   for the exact errors, then re-generate with a clearer prompt or fix the C#
   directly (it's plain, readable code in your project).

@@ -1,8 +1,17 @@
 # UnityGUI Desktop
 
 A one-click desktop app (Windows `.exe`) that generates **Unity games from a prompt** —
-no repo cloning, no plugin copying, no website. Connect your Anthropic key once,
-describe a game, and save it as a ready-to-open Unity project.
+no repo cloning, no plugin copying, no website. **Free to run**: it uses a free AI
+provider (no paid Claude key). Connect once, describe a game, and save it as a
+ready-to-open Unity project.
+
+### Free providers
+
+| Provider | Cost | Get started |
+|---|---|---|
+| **Google Gemini** | Free tier, no credit card | Free key at [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| **Groq** | Free, very fast | Free key at [console.groq.com](https://console.groq.com/keys) |
+| **Ollama** | 100% free, offline, **no key** | Install [ollama.com](https://ollama.com/download), then `ollama pull qwen2.5-coder` |
 
 ## Get it (Releases)
 
@@ -15,11 +24,10 @@ Download the latest **`UnityGUI-Setup-*.exe`** from the repo's
 
 ## Use it
 
-1. **Connect** — paste your Anthropic API key (get one at
-   [console.anthropic.com](https://console.anthropic.com/settings/keys)) and click
-   **Connect**. It's stored only on your PC and billed to your own Anthropic account.
-2. **Describe your game** — pick a model (default `claude-opus-5`) and a style
-   (Auto / 2D / 3D), then press **✦ Generate game**.
+1. **Connect** — pick a free **provider** (Gemini / Groq / Ollama), paste its free
+   key (Ollama needs none), and click **Connect**. The key is stored only on your PC.
+2. **Describe your game** — pick a model and a style (Auto / 2D / 3D), then press
+   **✦ Generate game**.
 3. **Save as Unity project** — choose a folder; the app writes a complete
    `UnityGUI-<Game>` project. Open it in **Unity Hub** (Add ▸ pick the folder,
    Unity 2021 LTS or newer) and press **Play** — the game builds itself and runs.
@@ -42,7 +50,7 @@ published to Releases.
 
 ```
 desktop/
-├── main.js               # Electron main: Claude API call + Unity project writer
+├── main.js               # Electron main: free-provider LLM calls + Unity project writer
 ├── preload.js            # safe IPC bridge
 ├── renderer/             # UI (index.html, style.css, app.js)
 ├── assets/icon.png       # app icon

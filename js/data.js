@@ -56,9 +56,9 @@
     { name: "The Plugin", price: "Free", cadence: "open source", desc: "The UnityGUI Editor plugin itself. Yours to use, read and modify.",
       feats: ["Full C# source (MIT)", "Editor-only, no build bloat", "All game genres", "Self-bootstrapping output", "No account required"],
       cta: "Get the plugin", featured: false },
-    { name: "Your API usage", price: "Pay-as-you-go", cadence: "billed by Anthropic", desc: "Generation runs on your own Anthropic API key — you only pay for what you generate.",
-      feats: ["Bring your own key", "Choose your model", "Key stays on your machine", "No middleman markup", "Cancel anytime"],
-      cta: "Get an API key", featured: true },
+    { name: "The AI", price: "Free", cadence: "free providers", desc: "Runs on a free AI provider — Google Gemini, Groq, or local Ollama. No paid Claude key.",
+      feats: ["Free Gemini / Groq key", "Ollama runs offline (no key)", "Choose your model", "Key stays on your machine", "No middleman"],
+      cta: "Get a free key", featured: true },
     { name: "Open source", price: "$0", cadence: "forever", desc: "Fork it, extend the genres, or wire in your own backend — the seams are documented.",
       feats: ["Clear generation seam", "Structured-output schema", "Contributions welcome", "No lock-in", "Self-host friendly"],
       cta: "View the repo", featured: false },
@@ -66,10 +66,10 @@
 
   const FAQ = [
     { q: "What exactly does UnityGUI generate?", a: "A complete, playable Unity game as C# scripts, written straight into your project. Each game is self-bootstrapping — it builds its own camera, player, level and UI from code — so you just press Play in an empty scene." },
-    { q: "Do I need an Anthropic API key?", a: "Yes. Generation runs on the real Claude API using your own key, which you paste into the plugin. It's stored locally in Unity's EditorPrefs and billed to your Anthropic account — nothing is proxied through us." },
+    { q: "Is it free? Do I need a paid Claude key?", a: "It's free. Generation runs on a free AI provider — Google Gemini (free tier, no credit card), Groq (free), or Ollama (100% free and offline, no key at all). You pick the provider and paste its free key; it's stored locally and nothing is proxied through us." },
     { q: "Which Unity version and pipeline?", a: "Unity 2021 LTS or newer on the Built-in Render Pipeline, using the legacy Input Manager. The generated code avoids external packages, prefabs and art assets so it runs anywhere." },
     { q: "Does it create scenes, prefabs or art?", a: "Yes — in Pro mode it generates a real .unity scene, prefabs, and procedural art assets (PNG sprites, materials and meshes) wired into a playable scene. A Lite mode is also available that writes self-bootstrapping scripts only, with no extra asset files." },
-    { q: "Which model does it use?", a: "It defaults to claude-opus-5 (the most capable) and lets you switch to claude-sonnet-5 or claude-haiku-4-5 for faster, cheaper runs — right from the plugin window." },
+    { q: "Which models can I use?", a: "Free ones: Gemini 2.0 Flash / 1.5 Flash (Google), Llama 3.3 70B and others (Groq), or any local model via Ollama (qwen2.5-coder, llama3.1, …). Pick the provider and model right in the app or plugin window." },
     { q: "Is it really the ForgeGUI idea for Unity?", a: "Yes — same describe-to-generate concept, rebuilt as a Unity Editor tool that produces runnable games instead of a hosted asset service." },
   ];
 

@@ -58,31 +58,6 @@ namespace UnityGUI.EditorTools
         // EditorPrefs handshake keys for the post-compile build step.
         public const string PendingKey = "UnityGUI.Build.Pending";
 
-        // ---- Structured-output schema -----------------------------------------
-        public const string GameSchema =
-@"{
-  ""type"": ""object"",
-  ""additionalProperties"": false,
-  ""properties"": {
-    ""game_name"": { ""type"": ""string"" },
-    ""summary"": { ""type"": ""string"" },
-    ""setup_notes"": { ""type"": ""string"" },
-    ""files"": {
-      ""type"": ""array"",
-      ""items"": {
-        ""type"": ""object"",
-        ""additionalProperties"": false,
-        ""properties"": {
-          ""path"": { ""type"": ""string"" },
-          ""content"": { ""type"": ""string"" }
-        },
-        ""required"": [""path"", ""content""]
-      }
-    }
-  },
-  ""required"": [""game_name"", ""summary"", ""setup_notes"", ""files""]
-}";
-
         // ---- Result types ------------------------------------------------------
         [Serializable] public class GenResult { public string game_name; public string summary; public string setup_notes; public GenFile[] files; }
         [Serializable] public class GenFile { public string path; public string content; }
@@ -135,12 +110,12 @@ HARD REQUIREMENTS
 - Aim for a polished, ""juicy"" feel where cheap: color, simple particles or tweened scale via code, a clear HUD and a game-over/restart. Keep it focused enough to be complete and correct.
 - Prefer several small, well-named files over one huge file.
 
-OUTPUT (structured JSON)
-- game_name: short title (used for the scene file name; keep it filename-safe).
-- summary: 1-3 sentences.
-- setup_notes: controls, objective, and what was created (scene, prefabs, art).
-- files: all the C# files above.
-Do not include markdown, code fences, or XML tags such as <thinking> anywhere.";
+OUTPUT — respond with ONLY a single JSON object, no markdown and no code fences, with EXACTLY these keys:
+  ""game_name"": string (short title, filename-safe — used for the scene file name),
+  ""summary"": string (1-3 sentences),
+  ""setup_notes"": string (controls, objective, and what was created: scene, prefabs, art),
+  ""files"": array of objects, each {{ ""path"": string, ""content"": string (the full C# source) }}
+Do not include XML tags such as <thinking> anywhere.";
         }
 
         public static string BuildLiteSystem(string outputFolder, GameStyle style)
@@ -165,14 +140,15 @@ CODE RULES
 - Every file path under ""{outputFolder}/"" ending in "".cs"". Produce COMPILING code — complete, valid C#, no placeholders.
 - Wire real input, a clear objective, and a win/lose or score loop.
 
-OUTPUT
-- game_name, summary, setup_notes (how to play), and files.
-Do not include markdown, code fences, or XML tags such as <thinking>.";
+OUTPUT — respond with ONLY a single JSON object, no markdown and no code fences, with EXACTLY these keys:
+  ""game_name"": string, ""summary"": string, ""setup_notes"": string (how to play),
+  ""files"": array of {{ ""path"": string (under {outputFolder}/, ends with .cs), ""content"": string }}
+Do not include XML tags such as <thinking>.";
         }
 
         // ---- Generate ----------------------------------------------------------
         public static void Generate(
-            string apiKey, string model, string prompt, string outputFolder,
+            LLMProvider provider, string apiKey, string model, string prompt, string outputFolder,
             GenMode mode, GameStyle style, int maxTokens,
             Action<RunRecord> onWritten,   // fired after scripts are written (Pro: build follows on reload)
             Action<string> onError,
@@ -183,8 +159,8 @@ Do not include markdown, code fences, or XML tags such as <thinking>.";
                 ? BuildProSystem(outputFolder, style)
                 : BuildLiteSystem(outputFolder, style);
 
-            ClaudeClient.SendMessage(
-                apiKey, model, system, prompt, GameSchema, maxTokens,
+            LLMClient.Send(
+                provider, apiKey, model, system, prompt, true, maxTokens,
                 onSuccess: text =>
                 {
                     try

@@ -7,7 +7,7 @@
 Describe a game → Claude writes ready-to-run C# into your project → press Play.
 
 A Unity-focused take on the [ForgeGUI](https://forgegui.com) "describe-to-generate" concept,
-powered by the Claude API. Use it however you like: a **one-click desktop app**, a **Unity
+powered by free AI (Gemini / Groq / Ollama — no paid key). Use it however you like: a **one-click desktop app**, a **Unity
 Editor plugin**, or the **companion website**.
 
 </div>
@@ -26,11 +26,13 @@ Editor plugin**, or the **companion website**.
 
 The simplest way in — a Windows `.exe` you download from
 [**Releases**](https://github.com/servankrall/UnityGui/releases). One-click install,
-paste your Anthropic API key once, describe a game, and click **Save as Unity project**;
+connect a **free** AI provider, describe a game, and click **Save as Unity project**;
 open the folder in Unity Hub and press Play.
 
-- **Electron app** (`desktop/`) — the Claude **Messages API** is called in the main
-  process (no CORS, key never leaves your machine).
+- **Free — no paid Claude key** — runs on **Google Gemini** (free tier, no credit card),
+  **Groq** (free), or **Ollama** (100% local/offline, no key).
+- **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
+  your key never leaves your machine).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
   push a tag like `v1.0.0` (or run the workflow) and the installer is published to Releases.
 
@@ -39,29 +41,29 @@ Details: [`desktop/README.md`](./desktop/README.md).
 ## 🎮 The Unity plugin
 
 The heart of the project. Copy [`unity/UnityGUI/`](./unity/UnityGUI/) into your project's
-`Assets/` folder, open **Window ▸ UnityGUI ▸ AI Game Generator**, paste your Anthropic API key,
+`Assets/` folder, open **Window ▸ UnityGUI ▸ AI Game Generator**, connect a **free** provider,
 describe a game, and press **Generate**.
 
-- **Real AI, in the Editor** — calls the Anthropic **Messages API** directly with `UnityWebRequest`.
-  No backend, no extra packages.
+- **Free AI, in the Editor** — calls **Gemini / Groq / Ollama** directly with `UnityWebRequest`.
+  No paid key, no backend, no extra packages.
 - **Pro mode → real assets** — generates a saved **`.unity` scene**, **prefabs**, and procedural
   **art** (PNG sprites, materials, meshes) wired into a playable scene. The plugin writes gameplay
   scripts *and* an Editor `SceneBuilder`, then invokes it via reflection once Unity recompiles.
 - **Lite mode → scripts only** — self-bootstrapping code that builds the whole game at Play time
   (a `[RuntimeInitializeOnLoadMethod]` entry point), no extra asset files.
-- **Reliable output** — **structured outputs** (`output_config.format`) return a strict JSON set of
-  files the plugin writes to disk (path-confined to your project).
-- **Bring your own key** — stored in Unity's EditorPrefs (local only), billed to your account.
-- **Model / style pickers** — defaults to `claude-opus-5`; choose 2D / 3D / Auto.
+- **Reliable output** — **JSON-mode** requests return a strict JSON set of files the plugin writes
+  to disk (path-confined to your project).
+- **Local key** — your free key is stored in Unity's EditorPrefs (local only).
+- **Provider / model / style pickers** — Gemini, Groq or Ollama; 2D / 3D / Auto.
 
 Full setup and troubleshooting: [`unity/UnityGUI/README.md`](./unity/UnityGUI/README.md).
 
 ```
 unity/UnityGUI/Editor/
 ├── UnityGUIWindow.cs          # the Editor window (Window ▸ UnityGUI ▸ …)
-├── GameGenerator.cs           # prompts, output schema, file writing, build handoff
+├── GameGenerator.cs           # prompts, file writing, build handoff
 ├── GeneratedBuildRunner.cs    # runs the generated SceneBuilder after the recompile (Pro)
-├── ClaudeClient.cs            # Anthropic Messages API client (UnityWebRequest)
+├── LLMClient.cs               # free-provider client — Gemini / Groq / Ollama (UnityWebRequest)
 └── UnityGUI.Editor.asmdef      # Editor-only assembly definition
 ```
 
@@ -97,8 +99,8 @@ Until a Client ID is set, the console runs in a clearly-marked **demo login** (e
 you can try it without setup. Sign in with the owner email to see the PRO/unlimited state.
 
 > ⚠️ **Note on security:** the website's sign-in is a client-side gate — fine for a personal/demo
-> build, not tamper-proof. The plugin itself needs no login; it authenticates to Anthropic with
-> your own API key.
+> build, not tamper-proof. The apps themselves need no login; they call the free AI provider with
+> your own local key.
 
 ### Run the site
 
@@ -111,7 +113,7 @@ python3 -m http.server 8080
 ## Notes
 
 UnityGUI is an independent, educational project and is **not affiliated with Unity Technologies,
-Anthropic, or ForgeGUI**. "Unity", "uGUI", "URP" and "HDRP" are referenced descriptively.
+Google, Groq, Ollama, or ForgeGUI**. "Unity", "uGUI", "URP" and "HDRP" are referenced descriptively.
 
 ## License
 

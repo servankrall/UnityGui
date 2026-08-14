@@ -1,9 +1,9 @@
 // =============================================================================
 //  UnityGUI — AI Game Generator window
 //  Open from:  Window ▸ UnityGUI ▸ AI Game Generator
+//  Uses FREE AI providers (Gemini / Groq / Ollama) — no paid Claude key.
 //  Pro mode writes real scene / prefab / art assets; Lite writes self-
-//  bootstrapping scripts only. Results survive the post-generation recompile
-//  by being persisted in RunStore.
+//  bootstrapping scripts only. Results survive the post-generation recompile.
 // =============================================================================
 using UnityEditor;
 using UnityEngine;
@@ -12,18 +12,16 @@ namespace UnityGUI.EditorTools
 {
     public class UnityGUIWindow : EditorWindow
     {
-        const string KEY_API = "UnityGUI.ApiKey";
-        const string KEY_MODEL = "UnityGUI.Model";
+        const string KEY_PROVIDER = "UnityGUI.Provider";
+        const string KEY_KEYPREFIX = "UnityGUI.Key.";      // + provider
+        const string KEY_MODELPREFIX = "UnityGUI.Model.";  // + provider
         const string KEY_PROMPT = "UnityGUI.Prompt";
         const string KEY_FOLDER = "UnityGUI.OutputFolder";
         const string KEY_MAXTOK = "UnityGUI.MaxTokens";
         const string KEY_MODE = "UnityGUI.Mode";
         const string KEY_STYLE = "UnityGUI.Style";
 
-        static readonly string[] Models =
-        {
-            "claude-opus-5", "claude-sonnet-5", "claude-opus-4-8", "claude-haiku-4-5",
-        };
+        static readonly string[] ProviderLabels = { "Google Gemini — free", "Groq — free & fast", "Ollama — local, no key" };
         static readonly string[] ModeLabels = { "Scene + Prefabs + Art (Pro)", "Scripts only (Lite)" };
         static readonly string[] StyleLabels = { "Auto", "2D", "3D" };
 
@@ -36,6 +34,7 @@ namespace UnityGUI.EditorTools
             "A tiny platformer: a capsule collects coins on floating platforms. Arrow keys to move, space to jump.",
         };
 
+        LLMProvider _provider = LLMProvider.Gemini;
         string _apiKey = "";
         int _modelIndex = 0;
         string _prompt = "";
@@ -44,7 +43,7 @@ namespace UnityGUI.EditorTools
         GenMode _mode = GenMode.Pro;
         GameStyle _style = GameStyle.Auto;
 
-        bool _busy;                 // true only during the HTTP request
+        bool _busy;
         float _elapsed;
         string _status = "";
         MessageType _statusType = MessageType.None;
@@ -56,25 +55,33 @@ namespace UnityGUI.EditorTools
         public static void Open()
         {
             var w = GetWindow<UnityGUIWindow>("UnityGUI");
-            w.minSize = new Vector2(440, 620);
+            w.minSize = new Vector2(440, 640);
             w.Show();
         }
 
+        string[] Models => LLMClient.ModelsFor(_provider);
+
         void OnEnable()
         {
-            _apiKey = EditorPrefs.GetString(KEY_API, "");
+            _provider = (LLMProvider)EditorPrefs.GetInt(KEY_PROVIDER, (int)LLMProvider.Gemini);
+            LoadProviderState();
             _prompt = EditorPrefs.GetString(KEY_PROMPT, "");
             _outputFolder = EditorPrefs.GetString(KEY_FOLDER, "Assets/UnityGUI/Generated");
             _maxTokens = EditorPrefs.GetInt(KEY_MAXTOK, GameGenerator.DefaultMaxTokens);
-            _modelIndex = Mathf.Max(0, System.Array.IndexOf(Models, EditorPrefs.GetString(KEY_MODEL, Models[0])));
             _mode = (GenMode)EditorPrefs.GetInt(KEY_MODE, (int)GenMode.Pro);
             _style = (GameStyle)EditorPrefs.GetInt(KEY_STYLE, (int)GameStyle.Auto);
 
             _run = RunStore.Load();
             if (_run != null && _run.phase == "building") StartPolling();
         }
-
         void OnDisable() { StopPolling(); }
+
+        void LoadProviderState()
+        {
+            _apiKey = EditorPrefs.GetString(KEY_KEYPREFIX + _provider, "");
+            string savedModel = EditorPrefs.GetString(KEY_MODELPREFIX + _provider, Models[0]);
+            _modelIndex = Mathf.Max(0, System.Array.IndexOf(Models, savedModel));
+        }
 
         void OnGUI()
         {
@@ -82,6 +89,8 @@ namespace UnityGUI.EditorTools
 
             DrawHeader();
             EditorGUILayout.Space(6);
+            DrawProvider();
+            EditorGUILayout.Space(4);
             DrawApiKey();
             EditorGUILayout.Space(4);
             DrawModelRow();
@@ -104,30 +113,57 @@ namespace UnityGUI.EditorTools
         {
             EditorGUILayout.LabelField("UnityGUI — AI Game Generator",
                 new GUIStyle(EditorStyles.boldLabel) { fontSize = 15 });
-            EditorGUILayout.LabelField("Describe a game. Claude generates a real Unity scene, prefabs and art.",
+            EditorGUILayout.LabelField("Describe a game. A free AI writes it into your project — no paid Claude key.",
                 EditorStyles.miniLabel);
+        }
+
+        void DrawProvider()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Provider", GUILayout.Width(60));
+                int p = EditorGUILayout.Popup((int)_provider, ProviderLabels);
+                if (p != (int)_provider)
+                {
+                    _provider = (LLMProvider)p;
+                    EditorPrefs.SetInt(KEY_PROVIDER, p);
+                    LoadProviderState();
+                }
+            }
         }
 
         void DrawApiKey()
         {
-            EditorGUILayout.LabelField("Anthropic API key", EditorStyles.boldLabel);
+            if (!LLMClient.NeedsKey(_provider))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.HelpBox("Ollama runs locally — no key needed. Install it and run: ollama pull " + Models[_modelIndex], MessageType.None);
+                    if (GUILayout.Button("Install", GUILayout.Width(70), GUILayout.Height(38)))
+                        Application.OpenURL(LLMClient.KeyUrl(_provider));
+                }
+                return;
+            }
+            EditorGUILayout.LabelField("Free API key", EditorStyles.boldLabel);
             using (new EditorGUILayout.HorizontalScope())
             {
                 string k = EditorGUILayout.PasswordField(_apiKey);
-                if (k != _apiKey) { _apiKey = k; EditorPrefs.SetString(KEY_API, _apiKey); }
-                if (GUILayout.Button("Get a key", GUILayout.Width(80)))
-                    Application.OpenURL("https://console.anthropic.com/settings/keys");
+                if (k != _apiKey) { _apiKey = k; EditorPrefs.SetString(KEY_KEYPREFIX + _provider, _apiKey); }
+                if (GUILayout.Button("Get free key", GUILayout.Width(96)))
+                    Application.OpenURL(LLMClient.KeyUrl(_provider));
             }
-            EditorGUILayout.LabelField("Stored locally in EditorPrefs. Never committed.", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Free, no credit card. Stored locally in EditorPrefs.", EditorStyles.miniLabel);
         }
 
         void DrawModelRow()
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField("Model", GUILayout.Width(50));
-                int m = EditorGUILayout.Popup(_modelIndex, Models);
-                if (m != _modelIndex) { _modelIndex = m; EditorPrefs.SetString(KEY_MODEL, Models[_modelIndex]); }
+                EditorGUILayout.LabelField("Model", GUILayout.Width(60));
+                var models = Models;
+                _modelIndex = Mathf.Clamp(_modelIndex, 0, models.Length - 1);
+                int m = EditorGUILayout.Popup(_modelIndex, models);
+                if (m != _modelIndex) { _modelIndex = m; EditorPrefs.SetString(KEY_MODELPREFIX + _provider, models[_modelIndex]); }
             }
         }
 
@@ -149,10 +185,7 @@ namespace UnityGUI.EditorTools
                     {
                         string captured = ex;
                         string label = captured.Length > 60 ? captured.Substring(0, 60) + "…" : captured;
-                        menu.AddItem(new GUIContent(label), false, () =>
-                        {
-                            _prompt = captured; EditorPrefs.SetString(KEY_PROMPT, _prompt); Repaint();
-                        });
+                        menu.AddItem(new GUIContent(label), false, () => { _prompt = captured; EditorPrefs.SetString(KEY_PROMPT, _prompt); Repaint(); });
                     }
                     menu.ShowAsContext();
                 }
@@ -186,7 +219,7 @@ namespace UnityGUI.EditorTools
                 if (mt != _maxTokens) { _maxTokens = mt; EditorPrefs.SetInt(KEY_MAXTOK, _maxTokens); }
             }
             if (_mode == GenMode.Pro)
-                EditorGUILayout.LabelField("Pro writes a .unity scene, prefabs and generated art into your project.",
+                EditorGUILayout.LabelField("Pro writes a .unity scene, prefabs and generated art. Best with a capable model.",
                     EditorStyles.miniLabel);
         }
 
@@ -201,8 +234,7 @@ namespace UnityGUI.EditorTools
                 if (GUILayout.Button(label, new GUIStyle(GUI.skin.button) { fontStyle = FontStyle.Bold, fixedHeight = 32 }))
                     StartGenerate();
             }
-            if (_busy)
-                EditorGUILayout.LabelField("Talking to Claude — this can take up to a couple of minutes.", EditorStyles.miniLabel);
+            if (_busy) EditorGUILayout.LabelField("Talking to the model — this can take up to a couple of minutes.", EditorStyles.miniLabel);
         }
 
         void DrawStatus()
@@ -217,8 +249,7 @@ namespace UnityGUI.EditorTools
 
             if (_run.phase == "building")
             {
-                EditorGUILayout.HelpBox($"Compiling generated scripts and building “{_run.gameName}” — "
-                    + "Unity is recompiling. This panel updates when it's done.", MessageType.Info);
+                EditorGUILayout.HelpBox($"Compiling generated scripts and building “{_run.gameName}” — Unity is recompiling. This panel updates when it's done.", MessageType.Info);
                 return;
             }
             if (_run.phase == "error")
@@ -229,10 +260,8 @@ namespace UnityGUI.EditorTools
                 return;
             }
 
-            // "scripts" (Lite) or "built" (Pro)
             EditorGUILayout.LabelField(_run.gameName, EditorStyles.boldLabel);
-            if (!string.IsNullOrEmpty(_run.summary))
-                EditorGUILayout.LabelField(_run.summary, EditorStyles.wordWrappedLabel);
+            if (!string.IsNullOrEmpty(_run.summary)) EditorGUILayout.LabelField(_run.summary, EditorStyles.wordWrappedLabel);
 
             if (_run.phase == "built")
             {
@@ -242,8 +271,7 @@ namespace UnityGUI.EditorTools
                 {
                     if (!string.IsNullOrEmpty(_run.scenePath) && GUILayout.Button("Open scene", GUILayout.Width(110)))
                     {
-                        if (UnityEditor.SceneManagement.EditorSceneManager
-                            .SaveCurrentModifiedScenesIfUserWantsTo())
+                        if (UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                             UnityEditor.SceneManagement.EditorSceneManager.OpenScene(_run.scenePath);
                     }
                     if (!string.IsNullOrEmpty(_run.scenePath) && GUILayout.Button("Ping scene", GUILayout.Width(90)))
@@ -263,9 +291,7 @@ namespace UnityGUI.EditorTools
 
             DrawScriptList();
 
-            string tip = _run.phase == "built"
-                ? "Open the scene above and press Play."
-                : "Press Play in an empty scene — the code bootstraps itself.";
+            string tip = _run.phase == "built" ? "Open the scene above and press Play." : "Press Play in an empty scene — the code bootstraps itself.";
             EditorGUILayout.Space(4);
             EditorGUILayout.HelpBox(tip, MessageType.None);
         }
@@ -293,30 +319,26 @@ namespace UnityGUI.EditorTools
 
         void StartGenerate()
         {
-            if (string.IsNullOrWhiteSpace(_apiKey)) { SetStatus("Paste your Anthropic API key first.", MessageType.Warning); return; }
-            if (string.IsNullOrWhiteSpace(_prompt)) { SetStatus("Describe the game you want to generate.", MessageType.Warning); return; }
+            if (LLMClient.NeedsKey(_provider) && string.IsNullOrWhiteSpace(_apiKey))
+            { SetStatus("Paste your free API key first.", MessageType.Warning); return; }
+            if (string.IsNullOrWhiteSpace(_prompt))
+            { SetStatus("Describe the game you want to generate.", MessageType.Warning); return; }
 
-            _busy = true;
-            _elapsed = 0f;
-            _run = null;
-            RunStore.Clear();
+            _busy = true; _elapsed = 0f; _run = null; RunStore.Clear();
             SetStatus("", MessageType.None);
 
+            string model = Models[Mathf.Clamp(_modelIndex, 0, Models.Length - 1)];
+            string key = LLMClient.NeedsKey(_provider) ? _apiKey : "";
+
             GameGenerator.Generate(
-                _apiKey, Models[_modelIndex], _prompt, _outputFolder, _mode, _style, _maxTokens,
+                _provider, key, model, _prompt, _outputFolder, _mode, _style, _maxTokens,
                 onWritten: record =>
                 {
-                    _busy = false;
-                    _run = record;
+                    _busy = false; _run = record;
                     if (record.phase == "building")
-                    {
-                        SetStatus("Files written. Compiling & building the scene…", MessageType.Info);
-                        StartPolling();
-                    }
+                    { SetStatus("Files written. Compiling & building the scene…", MessageType.Info); StartPolling(); }
                     else
-                    {
-                        SetStatus($"Done. Wrote {record.scriptPaths.Length} script(s) to {_outputFolder}.", MessageType.Info);
-                    }
+                    { SetStatus($"Done. Wrote {record.scriptPaths.Length} script(s) to {_outputFolder}.", MessageType.Info); }
                     Repaint();
                 },
                 onError: err => { _busy = false; SetStatus(err, MessageType.Error); Repaint(); },
@@ -325,18 +347,8 @@ namespace UnityGUI.EditorTools
 
         // ---- Build polling (survives the domain reload) ------------------------
 
-        void StartPolling()
-        {
-            if (_polling) return;
-            _polling = true;
-            EditorApplication.update += PollBuild;
-        }
-        void StopPolling()
-        {
-            if (!_polling) return;
-            _polling = false;
-            EditorApplication.update -= PollBuild;
-        }
+        void StartPolling() { if (_polling) return; _polling = true; EditorApplication.update += PollBuild; }
+        void StopPolling() { if (!_polling) return; _polling = false; EditorApplication.update -= PollBuild; }
         void PollBuild()
         {
             var latest = RunStore.Load();
@@ -344,12 +356,9 @@ namespace UnityGUI.EditorTools
             if (latest.phase != "building")
             {
                 _run = latest;
-                if (latest.phase == "built")
-                    SetStatus($"Built “{latest.gameName}” — {latest.assetSummary}.", MessageType.Info);
-                else if (latest.phase == "error")
-                    SetStatus(latest.error, MessageType.Error);
-                StopPolling();
-                Repaint();
+                if (latest.phase == "built") SetStatus($"Built “{latest.gameName}” — {latest.assetSummary}.", MessageType.Info);
+                else if (latest.phase == "error") SetStatus(latest.error, MessageType.Error);
+                StopPolling(); Repaint();
             }
         }
 

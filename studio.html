@@ -41,8 +41,8 @@
     </div>
 
     <h1>Welcome<span id="welcome-name"></span> 👋</h1>
-    <p class="lead">Get the Unity plugin running in four steps. It talks straight to the Claude API
-      from inside the Editor, so there's nothing to host — you bring your own Anthropic key.</p>
+    <p class="lead">Get the Unity plugin running in four steps. It talks straight to a <b>free</b> AI provider
+      from inside the Editor, so there's nothing to host and no paid Claude key.</p>
 
     <div class="step-card card">
       <div class="sc-n">1</div>
@@ -60,11 +60,14 @@
     <div class="step-card card">
       <div class="sc-n">2</div>
       <div>
-        <h3>Get an Anthropic API key</h3>
-        <p>Create a key in the Anthropic Console and paste it into the plugin window. Your key stays
-          on your machine (Unity EditorPrefs) and is billed to your own Anthropic account.</p>
+        <h3>Get a free AI key</h3>
+        <p>Pick a free provider and grab its key: <b>Google Gemini</b> (free, no credit card) or
+          <b>Groq</b> (free), or use <b>Ollama</b> locally with no key. Paste it into the plugin window —
+          it stays on your machine.</p>
         <div class="sc-actions">
-          <a class="btn btn-ember btn-sm" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Create an API key →</a>
+          <a class="btn btn-ember btn-sm" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Free Gemini key →</a>
+          <a class="btn btn-ghost btn-sm" href="https://console.groq.com/keys" target="_blank" rel="noopener">Free Groq key</a>
+          <a class="btn btn-ghost btn-sm" href="https://ollama.com/download" target="_blank" rel="noopener">Ollama (no key)</a>
         </div>
       </div>
     </div>
@@ -75,7 +78,7 @@
         <h3>Open the generator in Unity</h3>
         <p>In Unity's top menu, open:</p>
         <code class="codeblock">Window ▸ UnityGUI ▸ AI Game Generator</code>
-        <p style="margin-top:.7rem">Paste your key, pick a model (<b>claude-opus-5</b> by default), and describe your game.</p>
+        <p style="margin-top:.7rem">Pick your provider &amp; model, paste your free key, and describe your game.</p>
       </div>
     </div>
 
