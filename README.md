@@ -34,8 +34,11 @@ on it writes the project and opens it in the engine for you. You just press Play
   **Web (HTML5/JS)**. Unity gets a full project; Roblox a ready-to-open `.rbxlx`
   place file; Web a single self-contained `index.html` you can **▶ Play preview**
   in-app instantly — no engine or install needed.
-- **📁 Project library** — every game you generate is saved and re-openable
-  (Play / Open / reveal folder / export `.zip`) from the sidebar.
+- **📁 Project gallery** — every game you generate is saved and re-openable
+  (Play / Open / reveal folder / export `.zip`) from the sidebar, with
+  auto-captured **thumbnails** for Web games.
+- **One-tap prompt “spice”** — modifier chips (Harder, Levels, Particles, Neon,
+  Retro…) that enrich your prompt before generating.
 - **Chats + refine** — every game is a saved conversation; keep chatting
   (“make it faster”, “add enemies”) and the whole game regenerates in place.
 - **42 genre quick-starts + ✨ Enhance** — one-tap starter prompts per engine, and
@@ -52,7 +55,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.5` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.6` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 

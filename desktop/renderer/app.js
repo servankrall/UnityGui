@@ -1,7 +1,7 @@
 // UnityGUI Desktop — renderer (free providers · Unity + Roblox · chats · enhance · auto-open)
 const $ = (s) => document.querySelector(s);
 
-let PROVIDERS = {}, ENGINES = {}, GENRES = {};
+let PROVIDERS = {}, ENGINES = {}, GENRES = {}, MODIFIERS = [];
 let conversationId = null;   // null = new chat
 let currentEngine = "unity";
 let currentTurns = [];
@@ -49,9 +49,10 @@ function showConnected(connected,provider){
 }
 
 async function init(){
-  const meta=await window.api.getProviders(); PROVIDERS=meta.providers; ENGINES=meta.engines; GENRES=meta.genres||{};
+  const meta=await window.api.getProviders(); PROVIDERS=meta.providers; ENGINES=meta.engines; GENRES=meta.genres||{}; MODIFIERS=meta.modifiers||[];
   $("#provider").innerHTML=Object.entries(PROVIDERS).map(([id,p])=>`<option value="${id}">${esc(p.label)}</option>`).join("");
   fillKV($("#engine"),ENGINES,"unity");
+  renderModifiers();
 
   const cfg=await window.api.getConfig();
   $("#provider").value=cfg.provider; activeProvider=cfg.provider;
@@ -106,6 +107,17 @@ async function onConnect(){
   if(keys.length>1) toast("Connected ✓ — "+keys.length+" keys will auto-rotate");
   else toast("Connected ✓");
   await refreshConvos(); newChat();
+}
+
+// ---- Prompt modifiers ("spice") --------------------------------------------
+function renderModifiers(){
+  const box=$("#modifiers"); if(!box)return;
+  box.innerHTML=MODIFIERS.map((m,i)=>`<button class="chip-btn spice" data-i="${i}" title="${esc(m.text)}">${esc(m.icon||"✦")} ${esc(m.label)}</button>`).join("");
+  box.querySelectorAll(".chip-btn").forEach(b=>b.addEventListener("click",()=>{
+    const m=MODIFIERS[+b.dataset.i], t=$("#prompt");
+    t.value=(t.value.trim()?t.value.trim()+" ":"")+m.text;
+    t.focus();
+  }));
 }
 
 // ---- Genre quick-starts ----------------------------------------------------
@@ -168,7 +180,9 @@ async function openLibrary(){
   listEl.innerHTML=items.map((p,i)=>{
     const eng=ENGINES[p.engine]?ENGINES[p.engine].split(" ")[0]:p.engine;
     const openLbl=p.engine==="web"?"▶ Play":"▶ Open";
+    const thumb=p.thumb?`<img class="lib-thumb" src="${p.thumb}" alt="" />`:`<div class="lib-thumb placeholder">${p.engine==="web"?"🌐":p.engine==="roblox"?"🧱":"🎮"}</div>`;
     return `<div class="lib-row">
+      ${thumb}
       <div class="lib-main"><div class="lib-name">${esc(p.name)}</div><div class="convo-meta">${esc(eng)}</div></div>
       <div class="lib-actions">
         <button class="btn btn-ghost lib-open" data-i="${i}">${openLbl}</button>
@@ -244,6 +258,7 @@ function turnHtml(t,idx,isLast){
   <div class="turn">
     <div class="bubble user">${esc(t.prompt)}</div>
     <div class="bubble ai">
+      ${t._thumb?`<img class="turn-thumb" src="${t._thumb}" alt="preview" />`:""}
       <div class="res-title">${esc(d.game_name||"Game")} <span class="pill">${esc(engineName.split(" ")[0])}</span></div>
       <div class="res-sum">${esc(d.summary||"")}</div>
       ${d.setup_notes?`<div class="notes">${esc(d.setup_notes)}</div>`:""}
@@ -282,6 +297,7 @@ async function runGenerate(payload,busyMsg){
   const c=await window.api.getConvo(conversationId); currentTurns=c?c.turns:currentTurns;
   const last=currentTurns[currentTurns.length-1];
   if(last&&r.saved&&r.saved.openTarget){last._openTarget=r.saved.openTarget;}
+  if(last&&r.saved&&r.saved.thumb){last._thumb=r.saved.thumb;}
   $("#engine").disabled=true;
   $("#prompt").value=""; $("#prompt").placeholder="Ask for a change… (e.g. make it faster, add enemies)";
   renderTurns();

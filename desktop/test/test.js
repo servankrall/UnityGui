@@ -38,6 +38,15 @@ test("genres: all engines have non-empty starter prompts", () => {
   }
 });
 
+// ---- modifiers -------------------------------------------------------------
+test("modifiers: non-empty spice list with id/label/text", () => {
+  assert.ok(Array.isArray(prompts.MODIFIERS) && prompts.MODIFIERS.length >= 6);
+  for (const m of prompts.MODIFIERS) {
+    assert.ok(m.id && m.label && m.text, "modifier has id/label/text");
+    assert.ok(m.text.length > 10, "modifier text is a real instruction");
+  }
+});
+
 // ---- prompts ---------------------------------------------------------------
 test("prompt: unity system prompt asks for self-bootstrapping C#", () => {
   const p = prompts.buildSystemPrompt("unity", "auto");

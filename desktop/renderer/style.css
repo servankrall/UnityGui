@@ -136,6 +136,18 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 /* genre quick-starts */
 .genres{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}
 
+/* prompt modifiers ("spice") */
+.modifiers{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip-btn.spice{border-style:dashed;color:var(--violet2)}
+.chip-btn.spice:hover{background:rgba(124,92,255,.12);color:var(--text)}
+
+/* generated preview thumbnail (chat bubble) */
+.turn-thumb{display:block;width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1px solid var(--border);margin-bottom:10px;background:#0b0f18}
+
+/* library thumbnails */
+.lib-thumb{width:64px;height:48px;flex-shrink:0;border-radius:8px;object-fit:cover;border:1px solid var(--border);background:#0b0f18}
+.lib-thumb.placeholder{display:grid;place-items:center;font-size:22px;background:var(--surface2)}
+
 /* generated file viewer */
 .files{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .file{background:var(--surface2);border:1px solid var(--border-soft);border-radius:10px;overflow:hidden}

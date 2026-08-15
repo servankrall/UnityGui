@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.5)"
+        description: "Release tag to publish (e.g. v1.0.6)"
         required: true
-        default: "v1.0.5"
+        default: "v1.0.6"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -59,7 +59,8 @@ jobs:
 
             - **Three engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file · Web (HTML5/JS) → one `index.html`
             - **Web games play instantly** in-app with **▶ Play preview** — no engine, no install (procedural art + Web Audio sound)
-            - **📁 My projects** library — re-open / preview / zip every game you've made
+            - **📁 My projects** gallery — re-open / preview / zip every game, with auto-captured thumbnails for Web
+            - **One-tap prompt “spice”** — Harder · Levels · Power-ups · Particles · Neon · Retro · More SFX · High score
             - **Never runs out:** paste multiple keys (auto-rotate), auto-fallback across
               providers, retry rate-limits, and drop to **unlimited local Ollama** (no key/limits)
             - **42 genre quick-starts**, **✨ Enhance**, in-app **code view**, **🔁 Regenerate**, **📦 Share .zip**
