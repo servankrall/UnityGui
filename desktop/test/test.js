@@ -12,6 +12,7 @@ const writers = require("../lib/writers");
 const llm = require("../lib/llm");
 const zip = require("../lib/zip");
 const unity = require("../lib/unity");
+const art = require("../lib/art");
 
 let passed = 0;
 const tests = [];
@@ -360,6 +361,21 @@ test("generateResilient: image requires Gemini (errors without a Gemini key)", a
     () => llm.generateResilient(cfg, "sys", "hi", true, 100, { images: [{ mime: "image/png", data: "AAAA" }], retriesPer429: 0, sleep: async () => {} }),
     /Gemini/,
   );
+});
+
+// ---- free AI art (Pollinations) --------------------------------------------
+test("art.artUrl: encodes the prompt and clamps size", () => {
+  const u = art.artUrl("a cute pixel dragon", { width: 999999, height: 10, seed: 7 });
+  assert.ok(u.startsWith("https://image.pollinations.ai/prompt/"));
+  assert.ok(u.includes("a%20cute%20pixel%20dragon"), "prompt url-encoded");
+  assert.ok(/width=1536/.test(u), "width clamped to max");
+  assert.ok(/height=64/.test(u), "height clamped to min");
+  assert.ok(/nologo=true/.test(u) && /seed=7/.test(u));
+});
+test("art.clampInt: bounds and defaults", () => {
+  assert.strictEqual(art.clampInt(5000, 64, 1536, 512), 1536);
+  assert.strictEqual(art.clampInt(1, 64, 1536, 512), 64);
+  assert.strictEqual(art.clampInt("nope", 64, 1536, 512), 512);
 });
 
 // ---- ZIP writer ------------------------------------------------------------

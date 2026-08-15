@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("api", {
   enhancePrompt: (idea, engine) => ipcRenderer.invoke("prompt:enhance", { idea, engine }),
   generate: (payload) => ipcRenderer.invoke("generate", payload),
   pickImage: () => ipcRenderer.invoke("dialog:pickImage"),
+  generateArt: (payload) => ipcRenderer.invoke("art:generate", payload),
   pickFolder: () => ipcRenderer.invoke("dialog:pickFolder"),
   saveProject: (payload) => ipcRenderer.invoke("project:save", payload),
   zipProject: (payload) => ipcRenderer.invoke("project:zip", payload),

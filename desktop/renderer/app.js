@@ -7,6 +7,8 @@ let currentEngine = "unity";
 let currentTurns = [];
 let activeProvider = "gemini";
 let attachedImage = null;    // { name, mime, base64, dataUrl } or null
+let allConvos = [];          // cached list for client-side search
+let convoQuery = "";
 
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
 function setStatus(el,m,err,busy){el.innerHTML=(busy?'<span class="spinner"></span>':"")+(m||"");el.classList.toggle("err",!!err);}
@@ -90,7 +92,9 @@ async function init(){
   $("#set-unity-btn").addEventListener("click",async()=>{const r=await window.api.pickUnityExe();if(r&&r.ok){toast("Unity path set ✓");openSettings();}});
   $("#enhance-btn").addEventListener("click",onEnhance);
   $("#attach-btn").addEventListener("click",onAttach);
+  $("#art-btn").addEventListener("click",onArt);
   $("#attach-clear").addEventListener("click",clearImage);
+  $("#convo-search").addEventListener("input",e=>{convoQuery=e.target.value;renderConvos();});
   $("#generate-btn").addEventListener("click",onGenerate);
   $("#prompt").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")onGenerate();});
 
@@ -139,7 +143,12 @@ function renderGenres(){
 
 // ---- Conversations ---------------------------------------------------------
 async function refreshConvos(){
-  const list=await window.api.listConvos();
+  allConvos=await window.api.listConvos();
+  renderConvos();
+}
+function renderConvos(){
+  const q=convoQuery.trim().toLowerCase();
+  const list=q?allConvos.filter(c=>((c.title||"")+" "+(ENGINES[c.engine]||c.engine||"")).toLowerCase().includes(q)):allConvos;
   $("#convos").innerHTML=list.length?list.map(c=>`
     <div class="convo ${c.id===conversationId?"active":""}" data-id="${c.id}">
       <div class="convo-main">
@@ -147,7 +156,7 @@ async function refreshConvos(){
         <div class="convo-meta">${ENGINES[c.engine]?esc(ENGINES[c.engine].split(" ")[0]):esc(c.engine)} · ${c.turns} msg</div>
       </div>
       <button class="convo-del" data-del="${c.id}" title="Delete">✕</button>
-    </div>`).join(""):`<div class="convo-empty">No chats yet. Start one below.</div>`;
+    </div>`).join(""):(q?`<div class="convo-empty">No chats match “${esc(convoQuery)}”.</div>`:`<div class="convo-empty">No chats yet. Start one below.</div>`);
   document.querySelectorAll("#convos .convo").forEach(el=>el.addEventListener("click",e=>{
     if(e.target.dataset.del)return; selectConvo(el.dataset.id);
   }));
@@ -324,15 +333,30 @@ async function onAttach(){
   const img=await window.api.pickImage();
   if(!img)return;
   if(img.error){toast(img.error);return;}
-  attachedImage=img;
-  $("#attach-thumb").src=img.dataUrl; $("#attach-name").textContent=img.name||"image";
-  $("#attach-chip").classList.remove("hidden");
+  setImage(img);
   toast("Image attached ✓");
 }
 function clearImage(){
   attachedImage=null;
   $("#attach-thumb").removeAttribute("src"); $("#attach-name").textContent="";
   $("#attach-chip").classList.add("hidden");
+}
+function setImage(img){
+  attachedImage=img;
+  $("#attach-thumb").src=img.dataUrl; $("#attach-name").textContent=img.name||"image";
+  $("#attach-chip").classList.remove("hidden");
+}
+async function onArt(){
+  const p=$("#prompt").value.trim();
+  if(!p){setStatus($("#gen-status"),"Type what art (or your game idea) you want first.",true);return;}
+  const btn=$("#art-btn");btn.disabled=true;
+  setStatus($("#gen-status"),"Generating free AI art…",false,true);
+  const r=await window.api.generateArt({prompt:p});
+  btn.disabled=false;
+  if(!r||!r.ok){setStatus($("#gen-status"),(r&&r.error)||"Couldn't generate art.",true);return;}
+  setImage({name:r.name||"ai-art.png",mime:r.mime,base64:r.base64,dataUrl:r.dataUrl});
+  setStatus($("#gen-status"),"AI art attached ✓ — press Generate to build a game around it.",false);
+  toast("AI art attached ✓");
 }
 
 // ---- Open a finished project in its engine ---------------------------------

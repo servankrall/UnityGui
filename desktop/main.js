@@ -15,6 +15,7 @@ const { callLLM, generateResilient, parseResult, keyList, ollamaStatus, isTrunca
 const writers = require("./lib/writers");
 const zip = require("./lib/zip");
 const unity = require("./lib/unity");
+const art = require("./lib/art");
 
 const CONFIG_PATH = () => path.join(app.getPath("userData"), "config.json");
 const CONVOS_PATH = () => path.join(app.getPath("userData"), "conversations.json");
@@ -314,6 +315,26 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
 ipcMain.handle("dialog:pickFolder", async () => {
   const r = await dialog.showOpenDialog({ properties: ["openDirectory", "createDirectory"] });
   return r.canceled ? null : r.filePaths[0];
+});
+// Free AI art (Pollinations, no key). Returns the image as a data URL + base64
+// so it can be attached like a reference image.
+ipcMain.handle("art:generate", async (_e, { prompt, width, height, seed }) => {
+  if (!prompt || !prompt.trim()) return { ok: false, error: "Describe the art you want first." };
+  const url = art.artUrl(prompt.trim(), { width, height, seed });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 90000);
+  let res;
+  try { res = await fetch(url, { signal: controller.signal }); }
+  catch (e) { clearTimeout(timer); return { ok: false, error: e.name === "AbortError" ? "Image generation timed out." : "Couldn't reach the free image service (check your connection)." }; }
+  clearTimeout(timer);
+  if (!res.ok) return { ok: false, error: "Image service error (" + res.status + ")." };
+  try {
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (!buf.length) return { ok: false, error: "No image was returned. Try again." };
+    const mime = (res.headers.get("content-type") || "image/jpeg").split(";")[0];
+    const base64 = buf.toString("base64");
+    return { ok: true, name: "ai-art.png", mime, base64, dataUrl: "data:" + mime + ";base64," + base64 };
+  } catch (e) { return { ok: false, error: e.message }; }
 });
 ipcMain.handle("dialog:pickImage", async () => {
   const r = await dialog.showOpenDialog({
