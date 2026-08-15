@@ -30,12 +30,14 @@ function isModelUnavailable(msg, status) {
 // Per-provider ceilings on output tokens (avoids API errors on huge requests).
 const OUTPUT_CAP = { gemini: 60000, groq: 32000, ollama: 32000 };
 
-async function callGemini(apiKey, model, system, prompt, jsonMode, maxTokens) {
+async function callGemini(apiKey, model, system, prompt, jsonMode, maxTokens, images) {
   maxTokens = Math.min(maxTokens, OUTPUT_CAP.gemini);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const userParts = [{ text: prompt }];
+  for (const im of images || []) if (im && im.data) userParts.push({ inline_data: { mime_type: im.mime || "image/png", data: im.data } });
   const body = {
     systemInstruction: { parts: [{ text: system }] },
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    contents: [{ role: "user", parts: userParts }],
     generationConfig: { maxOutputTokens: maxTokens, temperature: 0.8 },
   };
   if (jsonMode) body.generationConfig.responseMimeType = "application/json";
@@ -78,8 +80,8 @@ async function callOllama(model, system, prompt, jsonMode, maxTokens) {
   return { text, finishReason: j.done_reason || (j.done === false ? "length" : null) };
 }
 
-function callOne(provider, apiKey, model, system, prompt, jsonMode, maxTokens) {
-  if (provider === "gemini") return callGemini(apiKey, model, system, prompt, jsonMode, maxTokens);
+function callOne(provider, apiKey, model, system, prompt, jsonMode, maxTokens, images) {
+  if (provider === "gemini") return callGemini(apiKey, model, system, prompt, jsonMode, maxTokens, images);
   if (provider === "groq") return callGroq(apiKey, model, system, prompt, jsonMode, maxTokens);
   if (provider === "ollama") return callOllama(model, system, prompt, jsonMode, maxTokens);
   return Promise.reject(new Error("Unknown provider: " + provider));
@@ -87,7 +89,7 @@ function callOne(provider, apiKey, model, system, prompt, jsonMode, maxTokens) {
 
 // ---- Public: call with automatic model fallback ----------------------------
 // Returns { text, model, finishReason } where `model` is whichever worked.
-async function callLLM(provider, apiKey, model, system, prompt, jsonMode, maxTokens) {
+async function callLLM(provider, apiKey, model, system, prompt, jsonMode, maxTokens, images) {
   const listed = (PROVIDERS[provider] && PROVIDERS[provider].models) || [];
   const primary = model || (PROVIDERS[provider] && PROVIDERS[provider].defaultModel);
   const candidates = [primary, ...listed.filter(m => m && m !== primary)];
@@ -95,7 +97,7 @@ async function callLLM(provider, apiKey, model, system, prompt, jsonMode, maxTok
   let lastErr;
   for (const m of candidates) {
     try {
-      const r = await callOne(provider, apiKey, m, system, prompt, jsonMode, maxTokens);
+      const r = await callOne(provider, apiKey, m, system, prompt, jsonMode, maxTokens, images);
       return { text: r.text, model: m, finishReason: r.finishReason };
     } catch (e) {
       lastErr = e;
@@ -160,8 +162,14 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // couple of times, then rotate to the next key/provider), retired models, and
 // bad keys. Returns { text, provider, model }.
 async function generateResilient(cfg, system, prompt, jsonMode, maxTokens, opts = {}) {
-  const cands = buildCandidates(cfg);
+  let cands = buildCandidates(cfg);
   if (!cands.length) throw new Error("No provider configured. Add a free API key, or install Ollama.");
+  const images = opts.images && opts.images.length ? opts.images : null;
+  if (images) {
+    // Only Gemini reads images among the free providers — restrict to it.
+    cands = cands.filter(c => c.provider === "gemini");
+    if (!cands.length) throw new Error("Add a free Google Gemini key to use an image — it's the free provider that can see pictures.");
+  }
   const wait = opts.sleep || sleep;
   const maxRetry = opts.retriesPer429 != null ? opts.retriesPer429 : 2;
   const backoff = opts.backoff || ((n) => n * 1500);
@@ -170,7 +178,7 @@ async function generateResilient(cfg, system, prompt, jsonMode, maxTokens, opts 
     let attempt = 0;
     for (;;) {
       try {
-        const { text, model, finishReason } = await callLLM(c.provider, c.apiKey, c.model, system, prompt, jsonMode, maxTokens);
+        const { text, model, finishReason } = await callLLM(c.provider, c.apiKey, c.model, system, prompt, jsonMode, maxTokens, images);
         return { text, provider: c.provider, model, finishReason };
       } catch (e) {
         if (isRateLimited(e.message, e.status) && attempt < maxRetry) { attempt++; await wait(backoff(attempt)); continue; }

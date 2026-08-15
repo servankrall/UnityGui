@@ -7,12 +7,14 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { spawn } = require("child_process");
 
 const { PROVIDERS, ENGINES } = require("./lib/providers");
 const prompts = require("./lib/prompts");
 const { callLLM, generateResilient, parseResult, keyList, ollamaStatus, isTruncated } = require("./lib/llm");
 const writers = require("./lib/writers");
 const zip = require("./lib/zip");
+const unity = require("./lib/unity");
 
 const CONFIG_PATH = () => path.join(app.getPath("userData"), "config.json");
 const CONVOS_PATH = () => path.join(app.getPath("userData"), "conversations.json");
@@ -46,6 +48,23 @@ function upsertConvo(convo) {
   const i = list.findIndex(c => c.id === convo.id);
   if (i >= 0) list[i] = convo; else list.unshift(convo);
   saveConvos(list);
+}
+
+// ---- Open a Unity project directly in the Editor (no Hub "Add" step) -------
+function resolveUnityExe() {
+  const c = loadConfig();
+  if (c.unityPath && fs.existsSync(c.unityPath)) return c.unityPath;
+  if (process.env.UNITY_PATH && fs.existsSync(process.env.UNITY_PATH)) return process.env.UNITY_PATH;
+  return unity.findUnityExe();
+}
+function launchUnity(projectRoot) {
+  const exe = resolveUnityExe();
+  if (!exe) return { ok: false, needsUnity: true };
+  try {
+    const child = spawn(exe, ["-projectPath", projectRoot], { detached: true, stdio: "ignore" });
+    child.unref();
+    return { ok: true, exe };
+  } catch (e) { return { ok: false, error: e.message }; }
 }
 
 // ---- Web thumbnail capture (best-effort, never throws) ---------------------
@@ -160,7 +179,7 @@ ipcMain.handle("prompt:enhance", async (_e, { idea, engine }) => {
 });
 
 // ---- IPC: generate (with refine + regenerate + conversation) ---------------
-ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) => {
+ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, image }) => {
   const c = loadConfig();
   if (!isConnected(c)) return { ok: false, error: "Not connected. Add your free API key first." };
 
@@ -174,17 +193,23 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) =>
   }
   if (!prompt || !prompt.trim()) return { ok: false, error: "Describe your game (or a change) first." };
 
+  const images = image && image.base64 ? [{ mime: image.mime || "image/png", data: image.base64 }] : null;
+
   try {
     const system = prompts.buildSystemPrompt(engine, c.style);
-    const userMsg = convo && convo.turns.length
+    let userMsg = convo && convo.turns.length
       ? prompts.buildRefinePrompt(convo.turns[convo.turns.length - 1].result, prompt)
       : prompt;
+    if (images) {
+      userMsg += "\n\nA reference image is attached — match its subject, colours and style in the game.";
+      if (engine === "web") userMsg += " The same image is also saved next to the game at \"assets/reference.png\"; you MAY load it as a sprite via new Image() / <img> using that relative path.";
+    }
     const badFiles = (d) => !d || !Array.isArray(d.files) || d.files.length === 0;
 
     // One generation attempt: resilient call (rotates keys / providers, retries
     // rate-limits) + truncation-tolerant parse.
     const attempt = async (tokens) => {
-      const r = await generateResilient(c, system, userMsg, true, tokens);
+      const r = await generateResilient(c, system, userMsg, true, tokens, { images });
       let data = null, parseErr = null;
       try { data = parseResult(r.text); } catch (e) { parseErr = e; }
       return { r, data, parseErr };
@@ -241,10 +266,21 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) =>
     if (c.autoOpen) {
       try {
         saved = writers.writeProject(engine, DEFAULT_OUT(), data);
-        shell.openPath(saved.openTarget);
-        // Web games: grab a thumbnail for the chat + library gallery (best-effort).
-        if (engine === "web" && saved.root) {
-          try { const t = await captureWebThumb(saved.openTarget, path.join(saved.root, "thumb.png")); if (t) saved.thumb = t; } catch {}
+        if (engine === "unity") {
+          // Open the project straight in the Unity Editor — no Hub "Add" step.
+          const u = launchUnity(saved.root);
+          if (u.ok) { saved.launched = "unity"; saved.unityExe = u.exe; }
+          else { shell.openPath(saved.root); saved.launched = "folder"; saved.needsUnity = !!u.needsUnity; }
+        } else {
+          // Web: drop the reference image into the project so a sprite path resolves.
+          if (engine === "web" && images && saved.root) {
+            try { fs.mkdirSync(path.join(saved.root, "assets"), { recursive: true }); fs.writeFileSync(path.join(saved.root, "assets", "reference.png"), Buffer.from(images[0].data, "base64")); } catch {}
+          }
+          shell.openPath(saved.openTarget);
+          // Web games: grab a thumbnail for the chat + library gallery (best-effort).
+          if (engine === "web" && saved.root) {
+            try { const t = await captureWebThumb(saved.openTarget, path.join(saved.root, "thumb.png")); if (t) saved.thumb = t; } catch {}
+          }
         }
       } catch (e) { saved = { error: e.message }; }
     }
@@ -255,6 +291,23 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) =>
 ipcMain.handle("dialog:pickFolder", async () => {
   const r = await dialog.showOpenDialog({ properties: ["openDirectory", "createDirectory"] });
   return r.canceled ? null : r.filePaths[0];
+});
+ipcMain.handle("dialog:pickImage", async () => {
+  const r = await dialog.showOpenDialog({
+    title: "Choose a reference image",
+    properties: ["openFile"],
+    filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp"] }],
+  });
+  if (r.canceled || !r.filePaths[0]) return null;
+  try {
+    const p = r.filePaths[0];
+    const buf = fs.readFileSync(p);
+    if (buf.length > 8 * 1024 * 1024) return { error: "Image is too large (max 8 MB)." };
+    const ext = path.extname(p).toLowerCase().replace(".", "");
+    const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : ext === "gif" ? "image/gif" : ext === "bmp" ? "image/bmp" : "image/png";
+    const base64 = buf.toString("base64");
+    return { name: path.basename(p), mime, base64, dataUrl: "data:" + mime + ";base64," + base64 };
+  } catch (e) { return { error: e.message }; }
 });
 ipcMain.handle("project:save", (_e, { engine, data, dir }) => {
   try { const s = writers.writeProject(engine, dir, data); return { ok: true, path: s.root, openTarget: s.openTarget }; }
@@ -274,6 +327,25 @@ ipcMain.handle("project:zipDir", (_e, dir) => {
 ipcMain.handle("shell:open", (_e, p) => shell.openPath(p));
 ipcMain.handle("shell:reveal", (_e, p) => shell.showItemInFolder(p));
 ipcMain.handle("shell:openExternal", (_e, url) => shell.openExternal(url));
+
+// ---- Unity: open a generated project directly in the Editor ----------------
+ipcMain.handle("unity:locate", () => ({ exe: resolveUnityExe() || null }));
+ipcMain.handle("unity:open", (_e, projectRoot) => {
+  if (!projectRoot || !fs.existsSync(projectRoot)) return { ok: false, error: "Project folder not found." };
+  const r = launchUnity(projectRoot);
+  if (r.ok) return r;
+  if (r.needsUnity) return { ok: false, needsUnity: true, error: "Unity Editor not found. Install Unity via Unity Hub, or point the app at your Unity.exe." };
+  return r;
+});
+ipcMain.handle("unity:pickExe", async () => {
+  const filters = process.platform === "win32"
+    ? [{ name: "Unity", extensions: ["exe"] }]
+    : [{ name: "Unity", extensions: ["*"] }];
+  const r = await dialog.showOpenDialog({ title: "Select your Unity Editor executable", properties: ["openFile"], filters });
+  if (r.canceled || !r.filePaths[0]) return { ok: false };
+  const c = loadConfig(); c.unityPath = r.filePaths[0]; saveConfig(c);
+  return { ok: true, exe: r.filePaths[0] };
+});
 
 // In-app playable preview (Web games): open the HTML in an isolated window.
 ipcMain.handle("preview:open", (_e, filePath) => {

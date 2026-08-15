@@ -91,7 +91,12 @@
           <textarea id="prompt" placeholder="Describe your game… (e.g. a 2D runner where a cube jumps over obstacles, space to jump)"></textarea>
           <div class="modifiers" id="modifiers"></div>
           <div class="composer-row">
+            <button class="btn btn-ghost" id="attach-btn" title="Attach a reference image (Gemini reads it)">📎 Image</button>
             <button class="btn btn-ghost" id="enhance-btn" title="Expand your idea into a detailed brief">✨ Enhance</button>
+            <div class="attach-chip hidden" id="attach-chip">
+              <img id="attach-thumb" alt="" /><span id="attach-name"></span>
+              <button id="attach-clear" title="Remove image">✕</button>
+            </div>
             <div class="spacer"></div>
             <button class="btn btn-primary" id="generate-btn">✦ Generate</button>
           </div>

@@ -30,10 +30,15 @@ The simplest way in — a Windows `.exe` you download from
 connect a **free** AI provider, pick an engine, describe a game — and with **Auto-open**
 on it writes the project and opens it in the engine for you. You just press Play.
 
+- **Opens straight in the engine** — Unity games **launch the Unity Editor on the
+  project automatically** (no Hub “Add” step; point it at `Unity.exe` once if
+  needed); Web games **▶ Play preview** in-app instantly; Roblox opens the
+  `.rbxlx` in Studio.
+- **📎 Reference image** — attach a photo and the free **Gemini** vision model
+  designs the game to match it (and embeds it as a sprite for Web games).
 - **Three engines** — generate for **Unity (C#)**, **Roblox Studio (Luau)**, or
   **Web (HTML5/JS)**. Unity gets a full project; Roblox a ready-to-open `.rbxlx`
-  place file; Web a single self-contained `index.html` you can **▶ Play preview**
-  in-app instantly — no engine or install needed.
+  place file; Web a single self-contained `index.html`.
 - **📁 Project gallery** — every game you generate is saved and re-openable
   (Play / Open / reveal folder / export `.zip`) from the sidebar, with
   auto-captured **thumbnails** for Web games.
@@ -55,7 +60,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.6` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.8` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 
