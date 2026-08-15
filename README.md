@@ -52,7 +52,8 @@ on it writes the project and opens it in the engine for you. You just press Play
   place file; Web a single self-contained `index.html`.
 - **📁 Project gallery** — every game you generate is saved and re-openable
   (Play / Open / reveal folder / export `.zip`) from the sidebar, with
-  auto-captured **thumbnails** for Web games.
+  auto-captured **thumbnails** for Web games. **🗂️ Tag** projects and filter the
+  gallery by tag (or search) to group them into **collections**.
 - **One-tap prompt “spice”** — modifier chips (Harder, Levels, Particles, Neon,
   Retro…) that enrich your prompt before generating.
 - **Chats + refine** — every game is a saved conversation; keep chatting
@@ -81,7 +82,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.18` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.19` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 

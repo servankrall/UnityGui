@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld("api", {
   servePhone: (root) => ipcRenderer.invoke("phone:serve", root),
   stopPhone: () => ipcRenderer.invoke("phone:stop"),
   listProjects: () => ipcRenderer.invoke("projects:list"),
+  setProjectTags: (payload) => ipcRenderer.invoke("projects:setTags", payload),
   previewGame: (p) => ipcRenderer.invoke("preview:open", p),
   checkWeb: (p) => ipcRenderer.invoke("web:check", p),
   openUnity: (root) => ipcRenderer.invoke("unity:open", root),
