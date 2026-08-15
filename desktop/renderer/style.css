@@ -189,3 +189,29 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 .code-edit{width:100%;min-height:220px;background:#070a11;color:#cbd5e6;border:1px solid var(--border);border-radius:8px;font-family:"Cascadia Code",ui-monospace,monospace;font-size:.76rem;line-height:1.5;padding:.6rem;resize:vertical;white-space:pre;tab-size:2}
 .editor-actions{display:flex;gap:8px;margin-top:8px}
 .editor-actions .btn{padding:.4rem .8rem;font-size:.82rem}
+
+/* ===== Empty-state polish (new chat) ===== */
+.empty-actions{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.empty-actions .btn{padding:.5rem .9rem;font-size:.85rem}
+.empty-examples{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+.empty-hint{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 0 2px}
+.empty-examples .chip-btn{text-align:left;line-height:1.35}
+
+/* ===== Onboarding coach-mark tour ===== */
+.tour{position:fixed;inset:0;z-index:80;pointer-events:none}
+.tour-spot{position:absolute;left:0;top:0;width:0;height:0;border-radius:12px;border:2px solid var(--violet2);
+  box-shadow:0 0 0 100vmax rgba(6,9,15,.72),0 0 26px rgba(124,92,255,.55);
+  transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;pointer-events:none}
+.tour-pop{position:absolute;left:0;top:0;pointer-events:auto;width:min(340px,calc(100vw - 24px));
+  background:linear-gradient(180deg,var(--surface),var(--elev));border:1px solid var(--border);border-radius:14px;
+  padding:16px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.tour-pop h3{margin:.35rem 0 .4rem;font-size:1.02rem}
+.tour-pop p{margin:0 0 .95rem;color:var(--muted);font-size:.9rem;line-height:1.5}
+.tour-progress{display:flex;gap:5px}
+.tour-progress span{width:16px;height:4px;border-radius:2px;background:var(--surface3)}
+.tour-progress span.on{background:var(--grad)}
+.tour-actions{display:flex;align-items:center;gap:8px}
+.tour-actions .spacer{flex:1}
+.tour-actions .btn{padding:.45rem .85rem;font-size:.85rem}
+.tour-skip{background:none;border:0;color:var(--dim);cursor:pointer;font-size:.82rem}
+.tour-skip:hover{color:var(--text)}
