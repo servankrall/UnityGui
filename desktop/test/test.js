@@ -295,6 +295,36 @@ test("generateResilient: when everything fails, error points to Ollama", async (
   );
 });
 
+// ---- reference image embedding ---------------------------------------------
+const PNG1x1 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+test("writeUnityProject: embeds an attached image under Resources/", () => {
+  const dir = mkTmp();
+  const out = writers.writeUnityProject(dir, { game_name: "Img", files: [{ path: "A.cs", content: "//" }] }, { image: { base64: PNG1x1 } });
+  assert.ok(fs.existsSync(path.join(out.root, "Assets", "UnityGUI", "Generated", "Resources", "reference.png")), "reference.png in Resources");
+});
+test("writeWebProject: embeds an attached image under assets/", () => {
+  const dir = mkTmp();
+  const out = writers.writeWebProject(dir, { game_name: "Img", files: [{ path: "index.html", content: "<img src='assets/reference.png'>" }] }, { image: { base64: PNG1x1 } });
+  assert.ok(fs.existsSync(path.join(out.root, "assets", "reference.png")), "reference.png in assets");
+});
+
+// ---- single-file HTML export -----------------------------------------------
+test("inlineHtmlAssets: turns a local image src into a data URI", () => {
+  const html = '<img src="assets/reference.png"><a href="https://x/y.png">keep</a><img src="data:image/png;base64,AA">';
+  const out = writers.inlineHtmlAssets(html, (rel) => rel === "assets/reference.png" ? Buffer.from("hello") : null);
+  assert.ok(out.includes("data:image/png;base64," + Buffer.from("hello").toString("base64")), "local asset inlined");
+  assert.ok(out.includes('href="https://x/y.png"'), "remote url left alone");
+});
+test("writeStandaloneHtml: produces one self-contained file with the asset inlined", () => {
+  const dir = mkTmp();
+  const out = writers.writeWebProject(dir, { game_name: "Solo", files: [{ path: "index.html", content: "<canvas></canvas><img src='assets/reference.png'>" }] }, { image: { base64: PNG1x1 } });
+  const solo = writers.writeStandaloneHtml(out.root);
+  assert.ok(solo && solo.endsWith("-standalone.html"), "wrote a -standalone.html");
+  const text = fs.readFileSync(solo, "utf8");
+  assert.ok(text.includes("data:image/png;base64,"), "asset inlined into the single file");
+  assert.ok(!/src=['"]assets\//.test(text), "no leftover relative asset references");
+});
+
 // ---- Unity locator ---------------------------------------------------------
 test("unity.pickNewest: chooses the newest editor version", () => {
   assert.strictEqual(unity.pickNewest(["2021.3.10f1", "2022.3.40f1", "2020.3.1f1"]), "2022.3.40f1");

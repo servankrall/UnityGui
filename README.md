@@ -19,7 +19,7 @@ the **companion website**.
 
 | | What it is | Where |
 |---|---|---|
-| 🖥️ **Desktop app (.exe)** | The easy path. Download from **Releases**, connect a free key once, then prompt → generate → it **auto-opens** a ready-to-run **Unity _or_ Roblox** project. Chat to refine. No repo, no plugin, no site. | [`desktop/`](./desktop/) · [Releases](https://github.com/servankrall/UnityGui/releases) |
+| 🖥️ **Desktop app (.exe)** | The easy path. Download from **Releases**, connect a free key once, then prompt → generate → it **auto-opens** a ready-to-run **Unity, Roblox _or_ Web** game (Unity launches the Editor; Web plays in-app). Chat to refine, attach a reference image. No repo, no plugin, no site. | [`desktop/`](./desktop/) · [Releases](https://github.com/servankrall/UnityGui/releases) |
 | 🎮 **Unity Editor plugin** | The most powerful path. `Window ▸ UnityGUI` generates a real `.unity` scene + prefabs + art **inside** your project. | [`unity/UnityGUI/`](./unity/UnityGUI/) |
 | 🌐 **Companion website** | Landing page + Google sign-in **console** (setup hub). Static, no build step. | repo root (`index.html`, `studio.html`) |
 
@@ -35,7 +35,12 @@ on it writes the project and opens it in the engine for you. You just press Play
   needed); Web games **▶ Play preview** in-app instantly; Roblox opens the
   `.rbxlx` in Studio.
 - **📎 Reference image** — attach a photo and the free **Gemini** vision model
-  designs the game to match it (and embeds it as a sprite for Web games).
+  designs the game to match it, embedded as a **real asset** (Web `assets/` sprite,
+  Unity `Resources/` texture).
+- **📄 Single-file `.html`** — export a Web game as one self-contained, itch.io-ready
+  HTML file (all assets inlined).
+- **⚙️ Settings** — per-provider API-key manager (multi-key auto-rotate + switch
+  active) and your `Unity.exe` path.
 - **Three engines** — generate for **Unity (C#)**, **Roblox Studio (Luau)**, or
   **Web (HTML5/JS)**. Unity gets a full project; Roblox a ready-to-open `.rbxlx`
   place file; Web a single self-contained `index.html`.
@@ -60,7 +65,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.8` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.9` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 

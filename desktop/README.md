@@ -39,8 +39,12 @@ stop you:
   click **▶ Open in Unity** once to point it at your `Unity.exe`). You just press Play.
 - **📎 Attach a reference image** — add a photo/screenshot and the AI (free
   **Gemini** vision) designs the game to match its subject, colours and style.
-  For Web games the image is even saved next to the game so it can be used as a
-  real sprite.
+  The image is embedded as a **real asset** — `assets/reference.png` for Web and
+  `Resources/reference.png` for Unity (`Resources.Load<Texture2D>("reference")`).
+- **📄 Single-file `.html`** — export a Web game as one self-contained HTML file
+  (all assets inlined) that runs anywhere and is **itch.io-ready**.
+- **⚙️ Settings** — manage your free API keys per provider (paste several to
+  auto-rotate, switch the active provider) and point the app at your `Unity.exe`.
 - **Three engines** — generate for **Unity (C#)**, **Roblox Studio (Luau)**, or
   **Web (HTML5/JS)** from the same window; pick the engine per chat.
 - **Web games play instantly** — the Web engine writes ONE self-contained

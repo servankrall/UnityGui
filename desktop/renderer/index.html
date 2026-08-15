@@ -12,6 +12,7 @@
     <div class="brand"><span class="dot"></span>Unity<span>GUI</span></div>
     <div class="spacer"></div>
     <div class="chip off" id="conn-chip"><span class="live"></span><span id="conn-text">Not connected</span></div>
+    <button class="link" id="settings-btn">⚙️ Settings</button>
     <button class="link hidden" id="disconnect-btn">Disconnect</button>
   </div>
 
@@ -103,6 +104,22 @@
           <div class="status" id="gen-status"></div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="modal hidden" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Settings</h2>
+        <button class="link" id="settings-close">✕ Close</button>
+      </div>
+      <p class="sub">Manage your free API keys (paste several per provider to auto-rotate) and where Unity is installed.</p>
+      <div id="settings-providers"></div>
+      <div class="set-row">
+        <div class="set-main"><div class="set-name">Unity Editor</div><div class="convo-meta" id="set-unity-path">—</div></div>
+        <button class="btn btn-ghost" id="set-unity-btn">Locate Unity.exe</button>
+      </div>
     </div>
   </div>
 

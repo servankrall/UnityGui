@@ -10,20 +10,24 @@ function sanitize(name) {
   return (name || "Game").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "") || "Game";
 }
 
-function writeProject(engine, baseDir, data) {
+function writeProject(engine, baseDir, data, opts = {}) {
   fs.mkdirSync(baseDir, { recursive: true });
-  if (engine === "roblox") return writeRobloxPlace(baseDir, data);
-  if (engine === "web") return writeWebProject(baseDir, data);
-  return writeUnityProject(baseDir, data);
+  if (engine === "roblox") return writeRobloxPlace(baseDir, data, opts);
+  if (engine === "web") return writeWebProject(baseDir, data, opts);
+  return writeUnityProject(baseDir, data, opts);
 }
 
-function writeWebProject(baseDir, data) {
+function writeWebProject(baseDir, data, opts = {}) {
   const projName = sanitize(data.game_name);
   const root = path.join(baseDir, "Web-" + projName);
   fs.mkdirSync(root, { recursive: true });
   const rootResolved = path.resolve(root);
   let indexPath = null;
   let written = 0;
+  // A reference image → assets/reference.png so a relative sprite path resolves.
+  if (opts.image && opts.image.base64) {
+    try { fs.mkdirSync(path.join(root, "assets"), { recursive: true }); fs.writeFileSync(path.join(root, "assets", "reference.png"), Buffer.from(opts.image.base64, "base64")); } catch {}
+  }
   for (const f of data.files || []) {
     if (!f || f.content == null) continue;
     let rel = String(f.path || f.name || "index.html").replace(/\\/g, "/").replace(/^\/+/, "");
@@ -44,11 +48,15 @@ function writeWebProject(baseDir, data) {
   return { root, openTarget: indexPath, written };
 }
 
-function writeUnityProject(baseDir, data) {
+function writeUnityProject(baseDir, data, opts = {}) {
   const projName = sanitize(data.game_name);
   const root = path.join(baseDir, "Unity-" + projName);
   const genDir = path.join(root, "Assets", "UnityGUI", "Generated");
   fs.mkdirSync(genDir, { recursive: true });
+  // A reference image → Resources so the game can Resources.Load<Texture2D>("reference").
+  if (opts.image && opts.image.base64) {
+    try { const resDir = path.join(genDir, "Resources"); fs.mkdirSync(resDir, { recursive: true }); fs.writeFileSync(path.join(resDir, "reference.png"), Buffer.from(opts.image.base64, "base64")); } catch {}
+  }
   fs.mkdirSync(path.join(root, "ProjectSettings"), { recursive: true });
   fs.mkdirSync(path.join(root, "Packages"), { recursive: true });
   const assetsRoot = path.resolve(path.join(root, "Assets"));
@@ -68,7 +76,7 @@ function writeUnityProject(baseDir, data) {
   return { root, openTarget: root, written };
 }
 
-function writeRobloxPlace(baseDir, data) {
+function writeRobloxPlace(baseDir, data, opts = {}) {
   const projName = sanitize(data.game_name);
   const root = path.join(baseDir, "Roblox-" + projName);
   fs.mkdirSync(path.join(root, "Scripts"), { recursive: true });
@@ -153,7 +161,42 @@ ${service("Players")}
 </roblox>`;
 }
 
+// ---- Single-file HTML export (Web) -----------------------------------------
+function mimeForExt(ext) {
+  ext = ext.toLowerCase();
+  return ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp"
+    : ext === "gif" ? "image/gif" : ext === "svg" ? "image/svg+xml" : ext === "bmp" ? "image/bmp" : "image/png";
+}
+// Inline local image assets referenced from the HTML as data: URIs so the whole
+// game is a single portable .html file. `readAsset(relPath)` returns a Buffer|null.
+function inlineHtmlAssets(html, readAsset) {
+  return String(html).replace(/(src|href)\s*=\s*(["'])([^"']+?\.(?:png|jpe?g|gif|webp|svg|bmp))\2/gi, (m, attr, q, rel) => {
+    if (/^(data:|https?:|\/\/)/i.test(rel)) return m; // already inline / remote
+    let buf = null;
+    try { buf = readAsset(rel.replace(/^\.?\//, "")); } catch { buf = null; }
+    if (!buf) return m;
+    const ext = rel.split(".").pop();
+    return `${attr}=${q}data:${mimeForExt(ext)};base64,${buf.toString("base64")}${q}`;
+  });
+}
+// Build a standalone single-file HTML from a written Web project. Returns the
+// path to the new "<Game>-standalone.html", or null if there's no index.html.
+function writeStandaloneHtml(projectRoot) {
+  const index = path.join(projectRoot, "index.html");
+  if (!fs.existsSync(index)) return null;
+  const html = fs.readFileSync(index, "utf8");
+  const inlined = inlineHtmlAssets(html, (rel) => {
+    const p = path.resolve(path.join(projectRoot, rel));
+    if (!p.startsWith(path.resolve(projectRoot))) return null; // stay inside the project
+    return fs.existsSync(p) ? fs.readFileSync(p) : null;
+  });
+  const base = path.basename(projectRoot).replace(/^Web-/, "") || "game";
+  const out = path.join(projectRoot, base + "-standalone.html");
+  fs.writeFileSync(out, inlined, "utf8");
+  return out;
+}
+
 module.exports = {
   sanitize, writeProject, writeUnityProject, writeRobloxPlace, writeWebProject,
-  buildRbxlx, cdata, xmlEsc,
+  buildRbxlx, cdata, xmlEsc, inlineHtmlAssets, writeStandaloneHtml, mimeForExt,
 };
