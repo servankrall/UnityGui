@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld("api", {
   getConvo: (id) => ipcRenderer.invoke("convos:get", id),
   deleteConvo: (id) => ipcRenderer.invoke("convos:delete", id),
   renameConvo: (id, title) => ipcRenderer.invoke("convos:rename", { id, title }),
+  favoriteConvo: (id, favorite) => ipcRenderer.invoke("convos:favorite", { id, favorite }),
 
   enhancePrompt: (idea, engine) => ipcRenderer.invoke("prompt:enhance", { idea, engine }),
   generate: (payload) => ipcRenderer.invoke("generate", payload),

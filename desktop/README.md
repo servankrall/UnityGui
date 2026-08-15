@@ -42,7 +42,9 @@ stop you:
   **Gemini** vision) designs the game to match it, and the image is embedded as a
   **real asset** — `assets/reference.png` for Web, `Resources/reference.png` for
   Unity (`Resources.Load<Texture2D>("reference")`).
-- **🔎 Search chats** — a search box filters your saved conversations.
+- **🔎 Search & ⭐ favorite chats** — a search box filters your saved
+  conversations, and you can star favorites (they sort to the top). Shortcuts:
+  **Ctrl+N** new chat · **Ctrl+K** search · **Ctrl+Enter** generate · **Esc** close.
 - **🔧 Auto QA (Check & fix)** — for Web games, the app runs the game headless,
   captures runtime/console errors, and the AI **auto-fixes them** in one click.
 - **📄 Single-file `.html`** — export a Web game as one self-contained HTML file

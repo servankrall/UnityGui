@@ -113,6 +113,9 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 .convo-main{flex:1;min-width:0}
 .convo-title{font-size:.86rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .convo-meta{font-size:.72rem;color:var(--dim)}
+.convo-star{background:none;border:0;color:var(--dim);cursor:pointer;font-size:.9rem;padding:0 2px;line-height:1;flex-shrink:0}
+.convo-star:hover{color:var(--violet2)}
+.convo-star.on{color:#ffca3a}
 .convo-del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:.8rem;padding:2px 4px;border-radius:6px}
 .convo-del:hover{color:#ff8a8a;background:var(--surface2)}
 .convo-empty{color:var(--dim);font-size:.82rem;padding:10px 4px}

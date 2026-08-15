@@ -38,7 +38,10 @@ on it writes the project and opens it in the engine for you. You just press Play
   your prompt with zero-key AI** (Pollinations); the free **Gemini** vision model
   designs the game to match it, embedded as a **real asset** (Web `assets/` sprite,
   Unity `Resources/` texture).
-- **🔎 Search your chats** — filter saved conversations from the sidebar.
+- **🔎 Search & ⭐ favorite your chats** — filter saved conversations from the
+  sidebar and star the ones you keep coming back to (favorites sort to the top).
+  Keyboard shortcuts: **Ctrl+N** new chat, **Ctrl+K** search, **Ctrl+Enter**
+  generate, **Esc** close dialogs.
 - **📄 Single-file `.html`** — export a Web game as one self-contained, itch.io-ready
   HTML file (all assets inlined).
 - **⚙️ Settings** — per-provider API-key manager (multi-key auto-rotate + switch
@@ -70,7 +73,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.12` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.13` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 
