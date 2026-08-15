@@ -12,6 +12,7 @@
     <div class="brand"><span class="dot"></span>Unity<span>GUI</span></div>
     <div class="spacer"></div>
     <div class="chip off" id="conn-chip"><span class="live"></span><span id="conn-text">Not connected</span></div>
+    <button class="link" id="help-btn" title="Take a quick guided tour">🎓 Tour</button>
     <button class="link" id="settings-btn">⚙️ Settings</button>
     <button class="link hidden" id="disconnect-btn">Disconnect</button>
   </div>
@@ -144,6 +145,22 @@
       </div>
       <p class="sub" id="library-sub">Every game you generate is saved here.</p>
       <div class="library-list" id="library-list"></div>
+    </div>
+  </div>
+
+  <!-- Onboarding coach-mark tour (non-blocking: spotlights an element, page stays usable) -->
+  <div class="tour hidden" id="tour" aria-hidden="true">
+    <div class="tour-spot" id="tour-spot"></div>
+    <div class="tour-pop" id="tour-pop" role="dialog" aria-label="Guided tour">
+      <div class="tour-progress" id="tour-progress"></div>
+      <h3 id="tour-title"></h3>
+      <p id="tour-body"></p>
+      <div class="tour-actions">
+        <button class="tour-skip" id="tour-skip">Skip</button>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost hidden" id="tour-prev">← Back</button>
+        <button class="btn btn-primary" id="tour-next">Next →</button>
+      </div>
     </div>
   </div>
 

@@ -130,6 +130,7 @@ ipcMain.handle("config:get", () => {
     provider: c.provider, connected: isConnected(c), model: c.model, engine: c.engine,
     style: c.style, autoOpen: c.autoOpen, maxTokens: c.maxTokens || 20000,
     keyCount: keyList(c, c.provider).length, ready: readyProviders(c),
+    tourConnect: !!c.tourConnect, tourApp: !!c.tourApp,
   };
 });
 ipcMain.handle("config:save", (_e, patch) => {
@@ -139,6 +140,8 @@ ipcMain.handle("config:save", (_e, patch) => {
   if (patch.engine && ENGINES[patch.engine]) c.engine = patch.engine;
   if (patch.style) c.style = patch.style;
   if (typeof patch.autoOpen === "boolean") c.autoOpen = patch.autoOpen;
+  if (typeof patch.tourConnect === "boolean") c.tourConnect = patch.tourConnect;
+  if (typeof patch.tourApp === "boolean") c.tourApp = patch.tourApp;
   if (Number.isFinite(patch.maxTokens)) c.maxTokens = Math.max(2000, Math.min(60000, patch.maxTokens));
   if (patch.apiKey !== undefined) {
     c.keys = c.keys || {};

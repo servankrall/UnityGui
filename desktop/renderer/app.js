@@ -10,6 +10,15 @@ let assets = [];             // [{ name, mime, base64, dataUrl }] — reference 
 const MAX_ASSETS = 4;
 let allConvos = [];          // cached list for client-side search
 let convoQuery = "";
+let seenTours = { connect: false, app: false }; // which guided tours the user has already seen
+let tour = null;             // active tour: { kind, steps, i }
+
+// One-line example prompts shown on the empty "new chat" screen, per engine.
+const EXAMPLES = {
+  unity: ["A 3D platformer where a robot collects glowing gears", "A top-down twin-stick space shooter with waves of enemies", "An endless runner that dodges traffic, space to jump"],
+  roblox: ["A lava-rising obby with checkpoints and a win pad", "A pet simulator where you hatch eggs and grow a team", "A round-based team deathmatch on a floating arena"],
+  web: ["A neon snake with speed power-ups and a high score", "A brick-breaker with a combo multiplier and particles", "A one-button flappy clone with day/night backgrounds"],
+};
 
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
 function setStatus(el,m,err,busy){el.innerHTML=(busy?'<span class="spinner"></span>':"")+(m||"");el.classList.toggle("err",!!err);}
@@ -64,6 +73,7 @@ async function init(){
   $("#style").value=cfg.style||"auto";
   $("#length").value=String(cfg.maxTokens||20000);
   $("#auto-open").checked=cfg.autoOpen!==false;
+  seenTours.connect=!!cfg.tourConnect; seenTours.app=!!cfg.tourApp;
   renderGenres();
   refreshConnectForm();
   if(cfg.model)$("#c-model").value=cfg.model;
@@ -101,8 +111,19 @@ async function init(){
   $("#generate-btn").addEventListener("click",onGenerate);
   $("#prompt").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")onGenerate();});
 
+  // guided tour
+  $("#help-btn").addEventListener("click",()=>startTour($("#app-view").classList.contains("hidden")?"connect":"app"));
+  $("#tour-next").addEventListener("click",tourNext);
+  $("#tour-prev").addEventListener("click",tourPrev);
+  $("#tour-skip").addEventListener("click",closeTour);
+
   // global keyboard shortcuts
   document.addEventListener("keydown",e=>{
+    if(tour){
+      if(e.key==="Escape"){ e.preventDefault(); closeTour(); return; }
+      if(e.key==="ArrowRight"||e.key==="Enter"){ e.preventDefault(); tourNext(); return; }
+      if(e.key==="ArrowLeft"){ e.preventDefault(); tourPrev(); return; }
+    }
     if(e.key==="Escape"){ const open=[...document.querySelectorAll(".modal:not(.hidden)")]; if(open.length){open.forEach(m=>m.classList.add("hidden"));e.preventDefault();} return; }
     if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey){
       const appVisible=!$("#app-view").classList.contains("hidden");
@@ -113,6 +134,8 @@ async function init(){
   });
 
   if(cfg.connected){ await refreshConvos(); if(!currentTurns.length) newChat(); }
+  // First-run: show the guided tour once (connect screen, or the app if already connected).
+  maybeAutoTour(cfg.connected);
 }
 
 function readKeys(){ return $("#key").value.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean); }
@@ -132,6 +155,8 @@ async function onConnect(){
   if(keys.length>1) toast("Connected ✓ — "+keys.length+" keys will auto-rotate");
   else toast("Connected ✓");
   await refreshConvos(); newChat();
+  // First time they reach the app → show the app tour once.
+  if(!seenTours.app){ markTourSeen("app"); startTour("app"); }
 }
 
 // ---- Prompt modifiers ("spice") --------------------------------------------
@@ -240,6 +265,70 @@ async function openSettings(){
   box.querySelectorAll(".set-getkey").forEach(b=>b.addEventListener("click",()=>window.api.openExternal(b.dataset.url)));
 }
 
+// ---- Guided tour (coach marks) ---------------------------------------------
+// A non-blocking spotlight tour that walks a first-time user through the app.
+// It never covers clicks (the page stays usable); advance with Next / arrows.
+const TOURS = {
+  connect: [
+    { el:"#provider", title:"Pick a free provider", body:"Gemini and Groq are free — grab a key with “Get a free key”. Or choose Ollama to run unlimited and offline, with no key at all." },
+    { el:"#key-block", title:"Paste your key(s)", body:"One per line. The app auto-rotates between them and falls back to your other providers, so you don’t run out mid-game." },
+    { el:"#use-ollama", title:"Never run out", body:"Sick of limits? One click switches you to unlimited local Ollama — offline, free, no key, no quota." },
+    { el:"#connect-btn", title:"Connect once", body:"That’s it — connect and you’re in. Your keys stay on this PC, and you can change everything later in ⚙️ Settings." },
+  ],
+  app: [
+    { el:"#templates-btn", title:"Instant templates", body:"In a hurry? Create a ready-made Snake, Pong or Flappy with no AI and no wait — then Play it or edit the code." },
+    { el:"#engine", title:"Pick an engine", body:"Unity (C#) and Roblox (Luau) write a full project; Web (HTML5) plays instantly right here in the app." },
+    { el:"#genres", title:"Quick-starts & ✨ Enhance", body:"Tap a genre to drop in a starter prompt, or type one line and hit ✨ Enhance to expand it into a full brief." },
+    { el:"#prompt", title:"Describe your game", body:"Say what you want, then press ✦ Generate (Ctrl+Enter). Attach a 📎 image or 🎨 generate art and the game is built to match." },
+    { el:"#auto-open", title:"Totally hands-off", body:"Leave Auto-open on and the app writes the project and opens it in the engine the moment it’s done. You just press Play." },
+    { el:"#library-btn", title:"Everything is saved", body:"Every game becomes a chat you can keep refining, and lands in 📁 My projects to re-open, preview, or export as a .zip." },
+  ],
+};
+function markTourSeen(kind){ if(seenTours[kind])return; seenTours[kind]=true; window.api.saveConfig(kind==="connect"?{tourConnect:true}:{tourApp:true}); }
+function maybeAutoTour(connected){
+  if(connected){ if(!seenTours.app){ markTourSeen("app"); startTour("app"); } }
+  else { if(!seenTours.connect){ markTourSeen("connect"); startTour("connect"); } }
+}
+function startTour(kind){
+  const steps=(TOURS[kind]||[]).filter(s=>{ const el=document.querySelector(s.el); return el && isShown(el); });
+  if(!steps.length) return;
+  tour={ kind, steps, i:0 };
+  $("#tour").classList.remove("hidden");
+  renderTourStep();
+  window.addEventListener("resize",positionTour);
+}
+function closeTour(){
+  if(!tour)return;
+  tour=null;
+  $("#tour").classList.add("hidden");
+  window.removeEventListener("resize",positionTour);
+}
+function tourNext(){ if(!tour)return; if(tour.i>=tour.steps.length-1){ closeTour(); return; } tour.i++; renderTourStep(); }
+function tourPrev(){ if(!tour)return; if(tour.i>0){ tour.i--; renderTourStep(); } }
+function isShown(el){ const r=el.getBoundingClientRect(); return el.offsetParent!==null && r.width>0 && r.height>0; }
+function renderTourStep(){
+  if(!tour)return;
+  const s=tour.steps[tour.i];
+  $("#tour-title").textContent=s.title;
+  $("#tour-body").textContent=s.body;
+  $("#tour-progress").innerHTML=tour.steps.map((_,i)=>`<span class="${i===tour.i?"on":""}"></span>`).join("");
+  $("#tour-prev").classList.toggle("hidden",tour.i===0);
+  $("#tour-next").textContent = tour.i===tour.steps.length-1 ? "Done ✓" : "Next →";
+  positionTour();
+}
+function positionTour(){
+  if(!tour)return;
+  const s=tour.steps[tour.i], el=document.querySelector(s.el);
+  if(!el||!isShown(el)){ closeTour(); return; } // target vanished (e.g. view switched)
+  const r=el.getBoundingClientRect(), pad=8, spot=$("#tour-spot"), pop=$("#tour-pop");
+  spot.style.left=(r.left-pad)+"px"; spot.style.top=(r.top-pad)+"px";
+  spot.style.width=(r.width+pad*2)+"px"; spot.style.height=(r.height+pad*2)+"px";
+  const vw=window.innerWidth, vh=window.innerHeight, pw=pop.offsetWidth||320, ph=pop.offsetHeight||160;
+  let top=r.bottom+14; if(top+ph>vh-12) top=Math.max(12,r.top-ph-14); // flip above if no room below
+  let left=r.left; if(left+pw>vw-12) left=vw-pw-12; left=Math.max(12,left);
+  pop.style.left=left+"px"; pop.style.top=top+"px";
+}
+
 // ---- Starter templates -----------------------------------------------------
 async function openTemplates(){
   const items=await window.api.listTemplates();
@@ -304,11 +393,31 @@ async function openLibrary(){
 
 function newChat(){
   conversationId=null; currentTurns=[]; clearAssets();
-  $("#turns").innerHTML=`<div class="turns-empty"><div class="art">🎮</div><h2>New chat</h2><p>Pick an engine, tap a genre or describe a game, then press Generate. Keep chatting to refine it.</p></div>`;
+  const examples=EXAMPLES[currentEngine]||EXAMPLES.unity;
+  $("#turns").innerHTML=`<div class="turns-empty">
+    <div class="art">🎮</div>
+    <h2>Start a new game</h2>
+    <p>Pick an engine, tap a genre, or just describe a game — then press ✦ Generate. Keep chatting to refine it.</p>
+    <div class="empty-actions">
+      <button class="btn btn-ghost" id="empty-templates">🧩 Use a template</button>
+      <button class="btn btn-ghost" id="empty-tour">🎓 Take the tour</button>
+    </div>
+    <div class="empty-examples">
+      <div class="empty-hint">Try one of these</div>
+      ${examples.map(e=>`<button class="chip-btn" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}
+    </div>
+  </div>`;
   $("#engine").disabled=false;
-  $("#prompt").value=""; $("#prompt").placeholder="Describe your game…"; $("#prompt").focus();
+  $("#prompt").value=""; $("#prompt").placeholder="Describe your game…";
   setStatus($("#gen-status"),"");
   document.querySelectorAll("#convos .convo").forEach(el=>el.classList.remove("active"));
+  const et=$("#empty-templates"), eo=$("#empty-tour");
+  if(et) et.addEventListener("click",openTemplates);
+  if(eo) eo.addEventListener("click",()=>startTour("app"));
+  document.querySelectorAll(".empty-examples .chip-btn").forEach(b=>b.addEventListener("click",()=>{
+    $("#prompt").value=b.dataset.ex; $("#prompt").focus();
+  }));
+  $("#prompt").focus();
 }
 
 async function selectConvo(id){

@@ -33,6 +33,11 @@ stop you:
 
 ### What's new
 
+- **🎓 Guided tour + friendlier start** — the first time you open the app a short
+  **coach-mark tour** spotlights each step (connect → pick an engine → describe a
+  game → generate → play); replay it anytime from **🎓 Tour** in the title bar. The
+  empty “new chat” screen now offers one-tap **example prompts**, a **Use a
+  template** shortcut, and a **Take the tour** button.
 - **Opens straight in Unity** — no more “here are some files, now import them
   yourself.” When a Unity game is generated the app **launches the Unity Editor
   on the project directly** (it auto-finds your Unity Hub install; if it can’t,
