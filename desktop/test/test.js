@@ -309,6 +309,26 @@ test("writeWebProject: embeds an attached image under assets/", () => {
   assert.ok(fs.existsSync(path.join(out.root, "assets", "reference.png")), "reference.png in assets");
 });
 
+// ---- inline editor: safe path join -----------------------------------------
+test("safeJoin: keeps paths inside the project, blocks traversal", () => {
+  const root = mkTmp();
+  assert.ok(writers.safeJoin(root, "index.html"), "in-project path allowed");
+  assert.ok(writers.safeJoin(root, "a/b/c.js"), "nested path allowed");
+  assert.strictEqual(writers.safeJoin(root, "../../etc/passwd"), null, "traversal blocked");
+  assert.strictEqual(writers.safeJoin(root, "a/../../evil"), null, "traversal via .. blocked");
+  // a leading-slash rel is neutralised into the project by path.join (stays inside, not an escape)
+  const abs = writers.safeJoin(root, "/abs/evil");
+  assert.ok(abs && abs.startsWith(path.resolve(root)), "absolute-looking rel is contained inside the project");
+});
+test("safeJoin round-trip: an edit written back is read the same", () => {
+  const dir = mkTmp();
+  const out = writers.writeWebProject(dir, { game_name: "Edit", files: [{ path: "index.html", content: "<canvas>old</canvas>" }] });
+  const target = writers.safeJoin(out.root, "index.html");
+  const edited = "<canvas>new — with \"quotes\" and\nnewlines</canvas>";
+  fs.writeFileSync(target, edited, "utf8");
+  assert.strictEqual(fs.readFileSync(out.openTarget, "utf8"), edited, "edit persisted verbatim");
+});
+
 // ---- single-file HTML export -----------------------------------------------
 test("inlineHtmlAssets: turns a local image src into a data URI", () => {
   const html = '<img src="assets/reference.png"><a href="https://x/y.png">keep</a><img src="data:image/png;base64,AA">';

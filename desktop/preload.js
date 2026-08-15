@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld("api", {
   saveProject: (payload) => ipcRenderer.invoke("project:save", payload),
   zipProject: (payload) => ipcRenderer.invoke("project:zip", payload),
   zipDir: (dir) => ipcRenderer.invoke("project:zipDir", dir),
+  saveFile: (payload) => ipcRenderer.invoke("file:save", payload),
   standaloneHtml: (root) => ipcRenderer.invoke("web:standalone", root),
   listProjects: () => ipcRenderer.invoke("projects:list"),
   previewGame: (p) => ipcRenderer.invoke("preview:open", p),

@@ -368,6 +368,17 @@ ipcMain.handle("project:zipDir", (_e, dir) => {
   try { return { ok: true, zipPath: zip.zipDir(dir) }; }
   catch (e) { return { ok: false, error: e.message }; }
 });
+// Save an edited file back into a generated project (inline code editor).
+ipcMain.handle("file:save", (_e, { root, rel, content }) => {
+  try {
+    if (!root || !rel) return { ok: false, error: "Missing path." };
+    const target = writers.safeJoin(root, rel);
+    if (!target) return { ok: false, error: "Path is outside the project." };
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, String(content == null ? "" : content), "utf8");
+    return { ok: true, path: target };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
 // Web: build a single self-contained .html (assets inlined) for easy sharing / itch.io.
 ipcMain.handle("web:standalone", (_e, projectRoot) => {
   try {
