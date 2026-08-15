@@ -10,7 +10,7 @@ const fs = require("fs");
 
 const { PROVIDERS, ENGINES } = require("./lib/providers");
 const prompts = require("./lib/prompts");
-const { callLLM, generateResilient, parseResult, keyList, ollamaStatus } = require("./lib/llm");
+const { callLLM, generateResilient, parseResult, keyList, ollamaStatus, isTruncated } = require("./lib/llm");
 const writers = require("./lib/writers");
 const zip = require("./lib/zip");
 
@@ -106,7 +106,7 @@ ipcMain.handle("config:get", () => {
   const c = loadConfig();
   return {
     provider: c.provider, connected: isConnected(c), model: c.model, engine: c.engine,
-    style: c.style, autoOpen: c.autoOpen, maxTokens: c.maxTokens || 16000,
+    style: c.style, autoOpen: c.autoOpen, maxTokens: c.maxTokens || 20000,
     keyCount: keyList(c, c.provider).length, ready: readyProviders(c),
   };
 });
@@ -117,7 +117,7 @@ ipcMain.handle("config:save", (_e, patch) => {
   if (patch.engine && ENGINES[patch.engine]) c.engine = patch.engine;
   if (patch.style) c.style = patch.style;
   if (typeof patch.autoOpen === "boolean") c.autoOpen = patch.autoOpen;
-  if (Number.isFinite(patch.maxTokens)) c.maxTokens = Math.max(2000, Math.min(32000, patch.maxTokens));
+  if (Number.isFinite(patch.maxTokens)) c.maxTokens = Math.max(2000, Math.min(60000, patch.maxTokens));
   if (patch.apiKey !== undefined) {
     c.keys = c.keys || {};
     // Accept a single key or an array (one per line) for auto-rotation.
@@ -179,19 +179,52 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) =>
     const userMsg = convo && convo.turns.length
       ? prompts.buildRefinePrompt(convo.turns[convo.turns.length - 1].result, prompt)
       : prompt;
-    // Resilient: rotates keys, falls back across providers, retries on rate-limit.
-    const { text, provider: usedProvider, model: usedModel } = await generateResilient(c, system, userMsg, true, c.maxTokens || 16000);
+    const badFiles = (d) => !d || !Array.isArray(d.files) || d.files.length === 0;
 
+    // One generation attempt: resilient call (rotates keys / providers, retries
+    // rate-limits) + truncation-tolerant parse.
+    const attempt = async (tokens) => {
+      const r = await generateResilient(c, system, userMsg, true, tokens);
+      let data = null, parseErr = null;
+      try { data = parseResult(r.text); } catch (e) { parseErr = e; }
+      return { r, data, parseErr };
+    };
+
+    const budget = c.maxTokens || 20000;
+    let { r, data, parseErr } = await attempt(budget);
+
+    // If the model got cut off (huge game) or the JSON wouldn't parse, retry once
+    // with a much larger token budget — this is the usual cause of the
+    // "Unterminated string in JSON" error.
+    if ((badFiles(data) || parseErr) && (isTruncated(r.finishReason) || parseErr)) {
+      const bigger = Math.min(60000, Math.max(budget * 2, 40000));
+      if (bigger > budget) {
+        const a2 = await attempt(bigger);
+        if (a2.data && !badFiles(a2.data)) ({ r, data, parseErr } = a2);
+        else if (a2.data && !data) ({ r, data, parseErr } = a2);
+      }
+    }
+
+    // If we salvaged a truncated blob, the last file is likely incomplete — drop it
+    // (only when there's more than one file, so we don't end up with nothing).
+    if (data && Array.isArray(data.files) && data.files.length > 1 && isTruncated(r.finishReason)) {
+      const last = data.files[data.files.length - 1];
+      if (!last || last.content == null || String(last.content).length < 24) data.files.pop();
+    }
+
+    if (badFiles(data)) {
+      return { ok: false, error: (isTruncated(r.finishReason) || parseErr)
+        ? "The game was too big and got cut off before it finished. Try a shorter description, set Length to Max, or switch model/provider."
+        : "The model returned no usable files. Try again or pick another model." };
+    }
+
+    const usedProvider = r.provider, usedModel = r.model;
     // Auto-heal: remember whichever provider/model actually worked so next time starts there.
     if ((usedProvider && usedProvider !== c.provider) || (usedModel && usedModel !== c.model)) {
       if (usedProvider) c.provider = usedProvider;
       if (usedModel) c.model = usedModel;
       saveConfig(c);
     }
-
-    const data = parseResult(text);
-    if (!data || !Array.isArray(data.files) || data.files.length === 0)
-      return { ok: false, error: "The model returned no files. Try a more specific prompt or another model." };
     data.engine = engine;
 
     // record the conversation turn

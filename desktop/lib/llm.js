@@ -27,7 +27,11 @@ function isModelUnavailable(msg, status) {
 }
 
 // ---- Single-model calls ----------------------------------------------------
+// Per-provider ceilings on output tokens (avoids API errors on huge requests).
+const OUTPUT_CAP = { gemini: 60000, groq: 32000, ollama: 32000 };
+
 async function callGemini(apiKey, model, system, prompt, jsonMode, maxTokens) {
+  maxTokens = Math.min(maxTokens, OUTPUT_CAP.gemini);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const body = {
     systemInstruction: { parts: [{ text: system }] },
@@ -43,9 +47,10 @@ async function callGemini(apiKey, model, system, prompt, jsonMode, maxTokens) {
   const parts = cand && cand.content && cand.content.parts ? cand.content.parts : [];
   const text = parts.map(p => p.text || "").join("");
   if (!text) throw new Error("Gemini returned no text (finishReason: " + (cand && cand.finishReason) + ").");
-  return text;
+  return { text, finishReason: cand && cand.finishReason };
 }
 async function callGroq(apiKey, model, system, prompt, jsonMode, maxTokens) {
+  maxTokens = Math.min(maxTokens, OUTPUT_CAP.groq);
   const body = { model, messages: [{ role: "system", content: system }, { role: "user", content: prompt }], max_tokens: maxTokens, temperature: 0.8 };
   if (jsonMode) body.response_format = { type: "json_object" };
   const { ok, status, raw } = await httpJson("https://api.groq.com/openai/v1/chat/completions", {
@@ -53,11 +58,13 @@ async function callGroq(apiKey, model, system, prompt, jsonMode, maxTokens) {
   });
   if (!ok) { const e = new Error(apiError(raw, status, "Groq")); e.status = status; throw e; }
   let j; try { j = JSON.parse(raw); } catch { throw new Error("Could not parse Groq response."); }
-  const text = j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : "";
+  const choice = j.choices && j.choices[0];
+  const text = choice && choice.message ? choice.message.content : "";
   if (!text) throw new Error("Groq returned no text.");
-  return text;
+  return { text, finishReason: choice && choice.finish_reason };
 }
 async function callOllama(model, system, prompt, jsonMode, maxTokens) {
+  maxTokens = Math.min(maxTokens, OUTPUT_CAP.ollama);
   const base = (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
   const body = { model, messages: [{ role: "system", content: system }, { role: "user", content: prompt }], stream: false, options: { num_predict: maxTokens } };
   if (jsonMode) body.format = "json";
@@ -68,7 +75,7 @@ async function callOllama(model, system, prompt, jsonMode, maxTokens) {
   let j; try { j = JSON.parse(r.raw); } catch { throw new Error("Could not parse Ollama response."); }
   const text = j.message && j.message.content ? j.message.content : "";
   if (!text) throw new Error("Ollama returned no text. Try: ollama pull " + model);
-  return text;
+  return { text, finishReason: j.done_reason || (j.done === false ? "length" : null) };
 }
 
 function callOne(provider, apiKey, model, system, prompt, jsonMode, maxTokens) {
@@ -79,7 +86,7 @@ function callOne(provider, apiKey, model, system, prompt, jsonMode, maxTokens) {
 }
 
 // ---- Public: call with automatic model fallback ----------------------------
-// Returns { text, model } where `model` is whichever model actually worked.
+// Returns { text, model, finishReason } where `model` is whichever worked.
 async function callLLM(provider, apiKey, model, system, prompt, jsonMode, maxTokens) {
   const listed = (PROVIDERS[provider] && PROVIDERS[provider].models) || [];
   const primary = model || (PROVIDERS[provider] && PROVIDERS[provider].defaultModel);
@@ -88,8 +95,8 @@ async function callLLM(provider, apiKey, model, system, prompt, jsonMode, maxTok
   let lastErr;
   for (const m of candidates) {
     try {
-      const text = await callOne(provider, apiKey, m, system, prompt, jsonMode, maxTokens);
-      return { text, model: m };
+      const r = await callOne(provider, apiKey, m, system, prompt, jsonMode, maxTokens);
+      return { text: r.text, model: m, finishReason: r.finishReason };
     } catch (e) {
       lastErr = e;
       tried.push(m);
@@ -163,8 +170,8 @@ async function generateResilient(cfg, system, prompt, jsonMode, maxTokens, opts 
     let attempt = 0;
     for (;;) {
       try {
-        const { text, model } = await callLLM(c.provider, c.apiKey, c.model, system, prompt, jsonMode, maxTokens);
-        return { text, provider: c.provider, model };
+        const { text, model, finishReason } = await callLLM(c.provider, c.apiKey, c.model, system, prompt, jsonMode, maxTokens);
+        return { text, provider: c.provider, model, finishReason };
       } catch (e) {
         if (isRateLimited(e.message, e.status) && attempt < maxRetry) { attempt++; await wait(backoff(attempt)); continue; }
         errs.push(`${c.provider}: ${e.message}`);
@@ -179,27 +186,66 @@ async function generateResilient(cfg, system, prompt, jsonMode, maxTokens, opts 
   );
 }
 
-// ---- JSON extraction + light repair ----------------------------------------
+// The model stopped because it hit the output-token limit → the JSON is cut off.
+function isTruncated(finishReason) {
+  return /max[_ ]?tokens|max_output|length|truncat/i.test(String(finishReason || ""));
+}
+
+// ---- JSON extraction + truncation-tolerant repair --------------------------
 function stripFences(s) {
   s = String(s).trim();
   if (s.startsWith("```")) { const nl = s.indexOf("\n"); if (nl >= 0) s = s.slice(nl + 1); if (s.endsWith("```")) s = s.slice(0, -3); s = s.trim(); }
   return s;
 }
+function dropTrailingCommas(s) { return s.replace(/,\s*([}\]])/g, "$1"); }
+
+// Return the first complete, balanced {...} object (respecting strings), or null
+// if the object never closes (i.e. the output was truncated).
+function extractBalanced(s) {
+  let inStr = false, esc = false, depth = 0, start = -1;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (c === "{") { if (depth === 0) start = i; depth++; }
+    else if (c === "}") { depth--; if (depth === 0 && start >= 0) return s.slice(start, i + 1); }
+  }
+  return null;
+}
+
+// Close an unterminated string and any open [ / { so a truncated blob parses.
+function closeTruncated(s) {
+  let inStr = false, esc = false; const stack = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (c === "{" || c === "[") stack.push(c);
+    else if (c === "}" || c === "]") stack.pop();
+  }
+  let out = s;
+  if (inStr) { if (esc) out = out.slice(0, -1); out += '"'; } // drop a dangling backslash, then close
+  for (let i = stack.length - 1; i >= 0; i--) out += stack[i] === "{" ? "}" : "]";
+  return out;
+}
+
+// Parse a model result into an object. Tolerates code fences, surrounding prose,
+// trailing commas, and — crucially — output cut off by the token limit.
 function parseResult(text) {
   let s = stripFences(text);
-  const a = s.indexOf("{"), b = s.lastIndexOf("}");
-  if (a >= 0 && b > a) s = s.slice(a, b + 1);
-  try { return JSON.parse(s); }
-  catch (e) {
-    // light repair: drop trailing commas before } or ]
-    const repaired = s.replace(/,\s*([}\]])/g, "$1");
-    return JSON.parse(repaired);
-  }
+  const a = s.indexOf("{");
+  if (a > 0) s = s.slice(a);
+  const balanced = extractBalanced(s);        // full object if not truncated
+  const candidate = balanced || s;            // else the whole remainder
+  try { return JSON.parse(candidate); } catch {}
+  try { return JSON.parse(dropTrailingCommas(candidate)); } catch {}
+  // last resort: close the truncated tail, then drop any trailing comma it created
+  return JSON.parse(dropTrailingCommas(closeTruncated(s)));
 }
 
 module.exports = {
-  httpJson, apiError, isModelUnavailable, isRateLimited,
+  httpJson, apiError, isModelUnavailable, isRateLimited, isTruncated,
   callGemini, callGroq, callOllama, callOne, callLLM,
   keyList, buildCandidates, generateResilient, ollamaStatus,
-  stripFences, parseResult,
+  stripFences, parseResult, extractBalanced, closeTruncated,
 };
