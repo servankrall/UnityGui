@@ -206,7 +206,7 @@ ipcMain.handle("prompt:enhance", async (_e, { idea, engine }) => {
 });
 
 // ---- IPC: generate (with refine + regenerate + conversation) ---------------
-ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, image, fixErrors }) => {
+ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, image, images: imagesIn, fixErrors }) => {
   const c = loadConfig();
   if (!isConnected(c)) return { ok: false, error: "Not connected. Add your free API key first." };
 
@@ -222,18 +222,19 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
   if (fixErrors && fixErrors.length) prompt = prompts.buildFixPrompt(fixErrors);
   if (!prompt || !prompt.trim()) return { ok: false, error: "Describe your game (or a change) first." };
 
-  const images = image && image.base64 ? [{ mime: image.mime || "image/png", data: image.base64 }] : null;
+  // Assets: an array of { name, mime, base64 } (or the legacy single `image`).
+  const rawAssets = Array.isArray(imagesIn) && imagesIn.length
+    ? imagesIn
+    : (image && image.base64 ? [{ name: "reference", mime: image.mime, base64: image.base64 }] : []);
+  const assets = rawAssets.filter(a => a && a.base64).map((a, i) => ({ name: writers.sanitize(a.name || ("asset" + (i + 1))) || ("asset" + (i + 1)), mime: a.mime || "image/png", base64: a.base64 }));
+  const images = assets.length ? assets.map(a => ({ mime: a.mime, data: a.base64 })) : null;
 
   try {
     const system = prompts.buildSystemPrompt(engine, c.style);
     let userMsg = convo && convo.turns.length
       ? prompts.buildRefinePrompt(convo.turns[convo.turns.length - 1].result, prompt)
       : prompt;
-    if (images) {
-      userMsg += "\n\nA reference image is attached — match its subject, colours and style in the game.";
-      if (engine === "web") userMsg += " The same image is also saved next to the game at \"assets/reference.png\"; you MAY load it as a sprite via new Image() / <img> using that relative path.";
-      else if (engine === "unity") userMsg += " The same image is available at runtime via Resources.Load<Texture2D>(\"reference\"); you MAY use it as a sprite or material texture.";
-    }
+    if (assets.length) userMsg += prompts.buildAssetHint(engine, assets.map(a => a.name));
     const badFiles = (d) => !d || !Array.isArray(d.files) || d.files.length === 0;
 
     // One generation attempt: resilient call (rotates keys / providers, retries
@@ -295,7 +296,7 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
     let saved = null;
     if (c.autoOpen) {
       try {
-        const imgOpt = images ? { image: { base64: images[0].data } } : {};
+        const imgOpt = assets.length ? { images: assets.map(a => ({ name: a.name, base64: a.base64 })) } : {};
         saved = writers.writeProject(engine, DEFAULT_OUT(), data, imgOpt);
         if (engine === "unity") {
           // Open the project straight in the Unity Editor — no Hub "Add" step.

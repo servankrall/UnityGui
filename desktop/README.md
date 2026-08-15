@@ -37,11 +37,12 @@ stop you:
   yourself.” When a Unity game is generated the app **launches the Unity Editor
   on the project directly** (it auto-finds your Unity Hub install; if it can’t,
   click **▶ Open in Unity** once to point it at your `Unity.exe`). You just press Play.
-- **📎 Reference image & 🎨 free AI art** — attach a photo/screenshot, or **generate
-  art from your prompt with no key at all** (via Pollinations). The AI (free
-  **Gemini** vision) designs the game to match it, and the image is embedded as a
-  **real asset** — `assets/reference.png` for Web, `Resources/reference.png` for
-  Unity (`Resources.Load<Texture2D>("reference")`).
+- **🎨 Asset pack (multiple images)** — attach photos/screenshots, or **generate
+  free AI art with no key** (via Pollinations); add **several** and **name each**
+  (double-click to label, e.g. `player`, `enemy`, `background`). The AI (free
+  **Gemini** vision) designs the game to match them, and every image is embedded
+  as a **real asset** — `assets/<name>.png` for Web, `Resources/<name>.png` for
+  Unity (`Resources.Load<Texture2D>("<name>")`).
 - **🔎 Search & ⭐ favorite chats** — a search box filters your saved
   conversations, and you can star favorites (they sort to the top). Shortcuts:
   **Ctrl+N** new chat · **Ctrl+K** search · **Ctrl+Enter** generate · **Esc** close.

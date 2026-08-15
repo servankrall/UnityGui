@@ -315,6 +315,23 @@ test("writeWebProject: embeds an attached image under assets/", () => {
   const out = writers.writeWebProject(dir, { game_name: "Img", files: [{ path: "index.html", content: "<img src='assets/reference.png'>" }] }, { image: { base64: PNG1x1 } });
   assert.ok(fs.existsSync(path.join(out.root, "assets", "reference.png")), "reference.png in assets");
 });
+test("assetList + multi-asset embed: named images land in Resources/ and assets/", () => {
+  const opts = { images: [{ name: "player", base64: PNG1x1 }, { name: "enemy!!", base64: PNG1x1 }] };
+  const names = writers.assetList(opts).map(a => a.name);
+  assert.deepStrictEqual(names, ["player", "enemy"], "names sanitized for filenames");
+  const u = writers.writeUnityProject(mkTmp(), { game_name: "Multi", files: [{ path: "A.cs", content: "//" }] }, opts);
+  assert.ok(fs.existsSync(path.join(u.root, "Assets", "UnityGUI", "Generated", "Resources", "player.png")));
+  assert.ok(fs.existsSync(path.join(u.root, "Assets", "UnityGUI", "Generated", "Resources", "enemy.png")));
+  const w = writers.writeWebProject(mkTmp(), { game_name: "Multi", files: [{ path: "index.html", content: "<canvas>" }] }, opts);
+  assert.ok(fs.existsSync(path.join(w.root, "assets", "player.png")) && fs.existsSync(path.join(w.root, "assets", "enemy.png")));
+});
+test("buildAssetHint: names + correct load path per engine", () => {
+  assert.strictEqual(prompts.buildAssetHint("web", []), "");
+  const web = prompts.buildAssetHint("web", ["player", "enemy"]);
+  assert.ok(/assets\/player\.png/.test(web) && /assets\/enemy\.png/.test(web));
+  const uni = prompts.buildAssetHint("unity", ["player"]);
+  assert.ok(/Resources\.Load<Texture2D>/.test(uni) && /player/.test(uni));
+});
 
 // ---- inline editor: safe path join -----------------------------------------
 test("safeJoin: keeps paths inside the project, blocks traversal", () => {

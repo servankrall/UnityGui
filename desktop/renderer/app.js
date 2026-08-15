@@ -6,7 +6,8 @@ let conversationId = null;   // null = new chat
 let currentEngine = "unity";
 let currentTurns = [];
 let activeProvider = "gemini";
-let attachedImage = null;    // { name, mime, base64, dataUrl } or null
+let assets = [];             // [{ name, mime, base64, dataUrl }] — reference images/sprites
+const MAX_ASSETS = 4;
 let allConvos = [];          // cached list for client-side search
 let convoQuery = "";
 
@@ -93,7 +94,6 @@ async function init(){
   $("#enhance-btn").addEventListener("click",onEnhance);
   $("#attach-btn").addEventListener("click",onAttach);
   $("#art-btn").addEventListener("click",onArt);
-  $("#attach-clear").addEventListener("click",clearImage);
   $("#convo-search").addEventListener("input",e=>{convoQuery=e.target.value;renderConvos();});
   $("#generate-btn").addEventListener("click",onGenerate);
   $("#prompt").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")onGenerate();});
@@ -273,7 +273,7 @@ async function openLibrary(){
 }
 
 function newChat(){
-  conversationId=null; currentTurns=[];
+  conversationId=null; currentTurns=[]; clearAssets();
   $("#turns").innerHTML=`<div class="turns-empty"><div class="art">🎮</div><h2>New chat</h2><p>Pick an engine, tap a genre or describe a game, then press Generate. Keep chatting to refine it.</p></div>`;
   $("#engine").disabled=false;
   $("#prompt").value=""; $("#prompt").placeholder="Describe your game…"; $("#prompt").focus();
@@ -370,23 +370,39 @@ function turnHtml(t,idx,isLast){
   </div>`;
 }
 
-// ---- Reference image -------------------------------------------------------
+// ---- Reference assets (multiple named images / sprites) --------------------
+function defaultAssetName(){ return "asset"+(assets.length+1); }
+function addAsset(a){
+  if(assets.length>=MAX_ASSETS){toast("Up to "+MAX_ASSETS+" assets");return;}
+  assets.push({name:a.name||defaultAssetName(),mime:a.mime,base64:a.base64,dataUrl:a.dataUrl});
+  renderAssets();
+}
+function clearAssets(){ assets=[]; renderAssets(); }
+function renderAssets(){
+  const box=$("#assets"); if(!box)return;
+  box.innerHTML=assets.map((a,i)=>`
+    <div class="asset-chip" data-i="${i}">
+      <img src="${a.dataUrl}" alt="" />
+      <span class="asset-name" title="Double-click to rename">${esc(a.name)}</span>
+      <button class="asset-del" data-i="${i}" title="Remove">✕</button>
+    </div>`).join("");
+  box.querySelectorAll(".asset-del").forEach(b=>b.addEventListener("click",()=>{ assets.splice(+b.dataset.i,1); renderAssets(); }));
+  box.querySelectorAll(".asset-name").forEach(s=>s.addEventListener("dblclick",()=>renameAsset(s)));
+}
+function renameAsset(span){
+  const i=+span.closest(".asset-chip").dataset.i, old=assets[i].name;
+  const inp=document.createElement("input"); inp.className="asset-rename"; inp.value=old;
+  span.replaceWith(inp); inp.focus(); inp.select();
+  const commit=(save)=>{ const v=inp.value.trim().replace(/[^\w\-]+/g,""); if(save&&v)assets[i].name=v; renderAssets(); };
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter")commit(true);else if(e.key==="Escape")commit(false);});
+  inp.addEventListener("blur",()=>commit(true));
+}
 async function onAttach(){
   const img=await window.api.pickImage();
   if(!img)return;
   if(img.error){toast(img.error);return;}
-  setImage(img);
-  toast("Image attached ✓");
-}
-function clearImage(){
-  attachedImage=null;
-  $("#attach-thumb").removeAttribute("src"); $("#attach-name").textContent="";
-  $("#attach-chip").classList.add("hidden");
-}
-function setImage(img){
-  attachedImage=img;
-  $("#attach-thumb").src=img.dataUrl; $("#attach-name").textContent=img.name||"image";
-  $("#attach-chip").classList.remove("hidden");
+  addAsset({name:defaultAssetName(),mime:img.mime,base64:img.base64,dataUrl:img.dataUrl});
+  toast("Image added ✓ — double-click its name to label it (e.g. player, enemy).");
 }
 async function onArt(){
   const p=$("#prompt").value.trim();
@@ -396,9 +412,9 @@ async function onArt(){
   const r=await window.api.generateArt({prompt:p});
   btn.disabled=false;
   if(!r||!r.ok){setStatus($("#gen-status"),(r&&r.error)||"Couldn't generate art.",true);return;}
-  setImage({name:r.name||"ai-art.png",mime:r.mime,base64:r.base64,dataUrl:r.dataUrl});
-  setStatus($("#gen-status"),"AI art attached ✓ — press Generate to build a game around it.",false);
-  toast("AI art attached ✓");
+  addAsset({name:defaultAssetName(),mime:r.mime,base64:r.base64,dataUrl:r.dataUrl});
+  setStatus($("#gen-status"),"AI art added ✓ — add more or press Generate.",false);
+  toast("AI art added ✓");
 }
 
 // ---- Open a finished project in its engine ---------------------------------
@@ -472,8 +488,9 @@ async function runGenerate(payload,busyMsg){
 async function onGenerate(){
   const prompt=$("#prompt").value.trim();
   if(!prompt){setStatus($("#gen-status"),"Describe your game (or a change) first.",true);return;}
-  const r=await runGenerate({prompt,conversationId,image:attachedImage},conversationId?"Refining…":"Generating — this can take a minute…");
-  if(r&&r.ok) clearImage();
+  const images=assets.map(a=>({name:a.name,mime:a.mime,base64:a.base64}));
+  const r=await runGenerate({prompt,conversationId,images},conversationId?"Refining…":"Generating — this can take a minute…");
+  if(r&&r.ok) clearAssets();
 }
 
 async function onRegenerate(){

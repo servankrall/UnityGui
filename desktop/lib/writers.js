@@ -10,6 +10,16 @@ function sanitize(name) {
   return (name || "Game").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "") || "Game";
 }
 
+// Normalise the asset list from opts: supports opts.images [{name,base64}] and
+// the legacy single opts.image { base64 }.
+function assetList(opts = {}) {
+  if (Array.isArray(opts.images) && opts.images.length) {
+    return opts.images.filter(a => a && a.base64).map((a, i) => ({ name: sanitize(a.name || ("asset" + (i + 1))) || ("asset" + (i + 1)), base64: a.base64 }));
+  }
+  if (opts.image && opts.image.base64) return [{ name: "reference", base64: opts.image.base64 }];
+  return [];
+}
+
 // Resolve `rel` inside `root`, returning null if it would escape (path-traversal guard).
 function safeJoin(root, rel) {
   const rootR = path.resolve(root);
@@ -31,9 +41,9 @@ function writeWebProject(baseDir, data, opts = {}) {
   const rootResolved = path.resolve(root);
   let indexPath = null;
   let written = 0;
-  // A reference image → assets/reference.png so a relative sprite path resolves.
-  if (opts.image && opts.image.base64) {
-    try { fs.mkdirSync(path.join(root, "assets"), { recursive: true }); fs.writeFileSync(path.join(root, "assets", "reference.png"), Buffer.from(opts.image.base64, "base64")); } catch {}
+  // Reference images → assets/<name>.png so relative sprite paths resolve.
+  for (const a of assetList(opts)) {
+    try { fs.mkdirSync(path.join(root, "assets"), { recursive: true }); fs.writeFileSync(path.join(root, "assets", a.name + ".png"), Buffer.from(a.base64, "base64")); } catch {}
   }
   for (const f of data.files || []) {
     if (!f || f.content == null) continue;
@@ -60,9 +70,9 @@ function writeUnityProject(baseDir, data, opts = {}) {
   const root = path.join(baseDir, "Unity-" + projName);
   const genDir = path.join(root, "Assets", "UnityGUI", "Generated");
   fs.mkdirSync(genDir, { recursive: true });
-  // A reference image → Resources so the game can Resources.Load<Texture2D>("reference").
-  if (opts.image && opts.image.base64) {
-    try { const resDir = path.join(genDir, "Resources"); fs.mkdirSync(resDir, { recursive: true }); fs.writeFileSync(path.join(resDir, "reference.png"), Buffer.from(opts.image.base64, "base64")); } catch {}
+  // Reference textures → Resources so the game can Resources.Load<Texture2D>("<name>").
+  for (const a of assetList(opts)) {
+    try { const resDir = path.join(genDir, "Resources"); fs.mkdirSync(resDir, { recursive: true }); fs.writeFileSync(path.join(resDir, a.name + ".png"), Buffer.from(a.base64, "base64")); } catch {}
   }
   fs.mkdirSync(path.join(root, "ProjectSettings"), { recursive: true });
   fs.mkdirSync(path.join(root, "Packages"), { recursive: true });
@@ -204,6 +214,6 @@ function writeStandaloneHtml(projectRoot) {
 }
 
 module.exports = {
-  sanitize, safeJoin, writeProject, writeUnityProject, writeRobloxPlace, writeWebProject,
+  sanitize, safeJoin, assetList, writeProject, writeUnityProject, writeRobloxPlace, writeWebProject,
   buildRbxlx, cdata, xmlEsc, inlineHtmlAssets, writeStandaloneHtml, mimeForExt,
 };

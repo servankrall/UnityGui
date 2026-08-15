@@ -147,12 +147,14 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 .composer-row{display:flex;align-items:center;gap:10px;margin-top:8px}
 .composer-row .spacer{flex:1}
 
-/* attached reference image chip */
-.attach-chip{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rp);padding:.2rem .5rem;max-width:230px}
-.attach-chip img{width:26px;height:26px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}
-.attach-chip span{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
-.attach-chip button{background:none;border:0;color:var(--dim);cursor:pointer;font-size:.85rem;padding:0 2px}
-.attach-chip button:hover{color:#ff8a8a}
+/* reference asset chips (multiple named images) */
+.assets{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.asset-chip{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rp);padding:.2rem .5rem;max-width:210px}
+.asset-chip img{width:26px;height:26px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}
+.asset-name{font-size:.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;cursor:text}
+.asset-del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:.85rem;padding:0 2px}
+.asset-del:hover{color:#ff8a8a}
+.asset-rename{font:inherit;font-size:.76rem;width:90px;padding:.1rem .3rem;border-radius:6px;border:1px solid var(--violet);background:var(--surface2);color:var(--text)}
 
 /* genre quick-starts */
 .genres{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}

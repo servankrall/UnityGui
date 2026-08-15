@@ -135,6 +135,16 @@ function buildFixPrompt(errors) {
   return `The game produced these runtime errors / console errors when it ran. Fix ALL of them and return the full corrected game (same JSON shape):\n${list}`;
 }
 
+// Tell the model which reference-image assets are available and how to load them.
+function buildAssetHint(engine, names) {
+  const list = (names || []).filter(Boolean);
+  if (!list.length) return "";
+  const head = "\n\n" + (list.length > 1 ? list.length + " reference image assets are attached" : "A reference image asset is attached") + " — match their subject, colours and style.";
+  if (engine === "web") return head + " They are also saved next to the game; you MAY use them as sprites via new Image()/<img> from: " + list.map(n => `"assets/${n}.png"`).join(", ") + ".";
+  if (engine === "unity") return head + " They are available at runtime as textures via Resources.Load<Texture2D>(\"<name>\"): " + list.join(", ") + ". Use them as sprites/materials.";
+  return head;
+}
+
 function buildRefinePrompt(prevResult, instruction) {
   const files = ((prevResult && prevResult.files) || []).map(f => {
     const name = f.path || f.name || "file";
@@ -156,6 +166,6 @@ function buildEnhancePrompt(engine, idea) {
 
 module.exports = {
   styleLine, GENRES, genresFor, MODIFIERS,
-  buildSystemPrompt, buildRefinePrompt, buildFixPrompt,
+  buildSystemPrompt, buildRefinePrompt, buildFixPrompt, buildAssetHint,
   ENHANCE_SYSTEM, buildEnhancePrompt,
 };

@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.13)"
+        description: "Release tag to publish (e.g. v1.0.14)"
         required: true
-        default: "v1.0.13"
+        default: "v1.0.14"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -59,7 +59,7 @@ jobs:
 
             - **Three engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file · Web (HTML5/JS) → one `index.html`
             - **Opens straight in Unity** — the app launches the Unity Editor on the generated project (no Hub "Add" step)
-            - **📎 Reference image & 🎨 free AI art** — attach a photo, or generate art from your prompt with no key (Pollinations); embedded as a real asset (Web sprite / Unity texture)
+            - **🎨 Asset pack** — attach photos or generate **multiple** free AI images (no key), name each (player/enemy/background); each is embedded as a real asset (Web sprite / Unity texture)
             - **🔎 Search & ⭐ favorite chats** (+ keyboard shortcuts) · **📄 Single-file `.html`** for Web (itch.io-ready) · **⚙️ Settings** to manage keys + your Unity.exe path
             - **In-app code editor** — for Web games, edit the code and **Save & re-run** the preview instantly
             - **🔧 Auto QA** — for Web games, catch runtime/console errors and let the AI **auto-fix** them in one click
