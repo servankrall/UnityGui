@@ -301,6 +301,8 @@ function renderTurns(){
   if(htmlBtn) htmlBtn.addEventListener("click",()=>onStandalone(last));
   const checkBtn=box.querySelector("#check-btn");
   if(checkBtn) checkBtn.addEventListener("click",()=>onCheckFix(last));
+  const phoneBtn=box.querySelector("#phone-btn");
+  if(phoneBtn) phoneBtn.addEventListener("click",()=>onPlayPhone(last));
   if(previewBtn) previewBtn.addEventListener("click",async()=>{
     if(!last._openTarget){toast("Generate first");return;}
     const r=await window.api.previewGame(last._openTarget);
@@ -364,6 +366,7 @@ function turnHtml(t,idx,isLast){
         <button class="btn btn-ghost" id="save-btn">💾 Save to…</button>
         <button class="btn btn-ghost" id="zip-btn" title="Export the whole project as a shareable .zip">📦 Share .zip</button>
         ${d.engine==="web"?`<button class="btn btn-ghost" id="check-btn" title="Run the game and auto-fix any runtime errors">🔧 Check &amp; fix</button>`:""}
+        ${d.engine==="web"?`<button class="btn btn-ghost" id="phone-btn" title="Play on your phone over the same Wi-Fi">📱 Phone</button>`:""}
         ${d.engine==="web"?`<button class="btn btn-ghost" id="html-btn" title="Export one self-contained .html (itch.io-ready)">📄 Single .html</button>`:""}
         <button class="btn btn-ghost" id="regen-btn" title="Regenerate this from the same prompt">🔁 Regenerate</button>
       </div>`:""}
@@ -519,6 +522,16 @@ async function onSaveFile(t,i,det){
   det.querySelector(".code").classList.remove("hidden");
   if(t.result.engine==="web"&&t._openTarget){ window.api.previewGame(t._openTarget); setStatus($("#gen-status"),"Saved & re-launched preview ✓",false); toast("Saved ✓"); }
   else { toast("Saved ✓ — Unity recompiles when you focus it"); setStatus($("#gen-status"),"Saved to the Unity project ✓",false); }
+}
+
+async function onPlayPhone(t){
+  if(!t||!t._root){toast("Generate first");return;}
+  setStatus($("#gen-status"),"Starting a local server…",false,true);
+  const r=await window.api.servePhone(t._root);
+  if(!r||!r.ok){setStatus($("#gen-status"),(r&&r.error)||"Couldn't start the server.",true);return;}
+  try{ await navigator.clipboard.writeText(r.url); }catch{}
+  setStatus($("#gen-status"),"📱 On your phone (same Wi‑Fi) open: "+r.url+"  (copied to clipboard)",false);
+  toast("Phone URL ready ✓ — copied");
 }
 
 async function onCheckFix(t){

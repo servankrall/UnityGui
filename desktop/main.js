@@ -16,6 +16,7 @@ const writers = require("./lib/writers");
 const zip = require("./lib/zip");
 const unity = require("./lib/unity");
 const art = require("./lib/art");
+const staticServer = require("./lib/server");
 
 const CONFIG_PATH = () => path.join(app.getPath("userData"), "config.json");
 const CONVOS_PATH = () => path.join(app.getPath("userData"), "conversations.json");
@@ -385,6 +386,20 @@ ipcMain.handle("file:save", (_e, { root, rel, engine, file, content }) => {
     return { ok: true, path: target };
   } catch (e) { return { ok: false, error: e.message }; }
 });
+// Play on phone: serve a Web game over the LAN so a phone can open it.
+let phoneServer = null; // { server, url, root }
+ipcMain.handle("phone:serve", async (_e, projectRoot) => {
+  try {
+    if (!projectRoot || !fs.existsSync(path.join(projectRoot, "index.html"))) return { ok: false, error: "No web game to serve." };
+    if (phoneServer) { try { phoneServer.server.close(); } catch {} phoneServer = null; }
+    const s = await staticServer.startStaticServer(projectRoot);
+    phoneServer = { server: s.server, url: s.url, root: projectRoot };
+    return { ok: true, url: s.url };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle("phone:stop", () => { if (phoneServer) { try { phoneServer.server.close(); } catch {} phoneServer = null; } return { ok: true }; });
+app.on("before-quit", () => { if (phoneServer) { try { phoneServer.server.close(); } catch {} } });
+
 // Web: build a single self-contained .html (assets inlined) for easy sharing / itch.io.
 ipcMain.handle("web:standalone", (_e, projectRoot) => {
   try {
