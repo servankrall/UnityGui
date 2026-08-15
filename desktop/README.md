@@ -69,8 +69,9 @@ stop you:
   simulator, escape room…; Web: snake, breakout, flappy, blocks…).
 - **✨ Enhance** — expand a one-line idea into a detailed, buildable brief before
   generating.
-- **In-app code view** — expand any generated file to read the source, with a
-  one-click **copy** button. Choose generation **Length** (Standard / Long / Max).
+- **In-app code editor** — expand any generated file to read the source (one-click
+  **copy**); for **Web games** you can **edit the code and Save & re-run** the
+  preview instantly. Choose generation **Length** (Standard / Long / Max).
 - **🔁 Regenerate** — re-roll the latest result from the same prompt.
 - **Fully automatic** — turn on **Auto-open when done** and the app writes the
   project and opens it in Unity / Roblox Studio the moment generation finishes.

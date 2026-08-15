@@ -290,23 +290,45 @@ function renderTurns(){
   if(saveBtn) saveBtn.addEventListener("click",()=>onSave(last.result));
   if(zipBtn) zipBtn.addEventListener("click",()=>onShareZip(last.result));
   if(regenBtn) regenBtn.addEventListener("click",onRegenerate);
-  // copy buttons for code files
-  box.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",()=>{
-    navigator.clipboard.writeText(b.getAttribute("data-copy")).then(()=>toast("Copied ✓"));
+  // copy buttons — read the <pre> directly (handles quotes/newlines safely)
+  box.querySelectorAll(".file .copy").forEach(b=>b.addEventListener("click",()=>{
+    const pre=b.closest(".file").querySelector(".code");
+    navigator.clipboard.writeText(pre.textContent).then(()=>toast("Copied ✓"));
   }));
+  // inline code editor (web games)
+  box.querySelectorAll(".file .edit-file").forEach(b=>b.addEventListener("click",e=>{
+    e.preventDefault(); const det=b.closest(".file"); det.open=true;
+    det.querySelector(".code").classList.add("hidden");
+    det.querySelector(".code-editor").classList.remove("hidden");
+    det.querySelector(".code-edit").focus();
+  }));
+  box.querySelectorAll(".file .cancel-edit").forEach(b=>b.addEventListener("click",()=>{
+    const det=b.closest(".file");
+    det.querySelector(".code-edit").value=det.querySelector(".code").textContent;
+    det.querySelector(".code-editor").classList.add("hidden");
+    det.querySelector(".code").classList.remove("hidden");
+  }));
+  box.querySelectorAll(".file .save-file").forEach(b=>b.addEventListener("click",()=>onSaveFile(last,+b.dataset.fi,b.closest(".file"))));
   box.scrollTop=box.scrollHeight;
 }
 
-function fileBlock(f){
+function fileBlock(f,i,editable){
   const name=f.path||f.name||"file";
   const kind=f.kind?` <em>(${esc(f.kind)})</em>`:"";
   const code=f.content||"";
-  return `<details class="file"><summary><span class="fname">${esc(name)}</span>${kind}<button class="copy" data-copy="${esc(code)}" title="Copy">⧉</button></summary><pre class="code">${esc(code)}</pre></details>`;
+  return `<details class="file" data-fi="${i}">
+    <summary><span class="fname">${esc(name)}</span>${kind}
+      ${editable?`<button class="edit-file" data-fi="${i}" title="Edit code">✏️</button>`:""}
+      <button class="copy" title="Copy">⧉</button></summary>
+    <pre class="code">${esc(code)}</pre>
+    ${editable?`<div class="code-editor hidden"><textarea class="code-edit" spellcheck="false">${esc(code)}</textarea><div class="editor-actions"><button class="btn btn-primary save-file" data-fi="${i}">💾 Save &amp; re-run</button><button class="btn btn-ghost cancel-edit">Cancel</button></div></div>`:""}
+  </details>`;
 }
 
 function turnHtml(t,idx,isLast){
   const d=t.result||{};
-  const files=(d.files||[]).map(fileBlock).join("");
+  const editable=isLast&&d.engine==="web"&&!!t._root;
+  const files=(d.files||[]).map((f,i)=>fileBlock(f,i,editable)).join("");
   const engineName=ENGINES[d.engine]||"";
   return `
   <div class="turn">
@@ -446,6 +468,19 @@ async function onSave(data){
   if(!r.ok){setStatus($("#gen-status"),r.error||"Could not save.",true);return;}
   setStatus($("#gen-status"),"Saved: "+r.path,false);
   if(confirm("Saved to:\n"+r.path+"\n\nOpen it now?")) window.api.openPath(r.openTarget||r.path);
+}
+
+async function onSaveFile(t,i,det){
+  if(!t||!t.result||!t.result.files[i]){toast("Nothing to save");return;}
+  const f=t.result.files[i], rel=f.path||f.name;
+  const content=det.querySelector(".code-edit").value;
+  const r=await window.api.saveFile({root:t._root,rel,content});
+  if(!r||!r.ok){toast((r&&r.error)||"Save failed");return;}
+  f.content=content; det.querySelector(".code").textContent=content;
+  det.querySelector(".code-editor").classList.add("hidden");
+  det.querySelector(".code").classList.remove("hidden");
+  toast("Saved ✓");
+  if(t.result.engine==="web"&&t._openTarget){ window.api.previewGame(t._openTarget); setStatus($("#gen-status"),"Saved & re-launched preview ✓",false); }
 }
 
 async function onStandalone(t){

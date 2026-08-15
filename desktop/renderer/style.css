@@ -178,3 +178,9 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 .file .copy{margin-left:auto;background:var(--surface3);border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer;padding:.1rem .45rem;font-size:.85rem}
 .file .copy:hover{color:var(--text)}
 .file .code{margin:0;padding:.7rem .85rem;border-top:1px solid var(--border-soft);background:#0b0f18;color:#cbd5e6;font-family:"Cascadia Code",ui-monospace,monospace;font-size:.76rem;line-height:1.5;max-height:300px;overflow:auto;white-space:pre;tab-size:2}
+.file .edit-file{background:var(--surface3);border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer;padding:.1rem .45rem;font-size:.85rem}
+.file .edit-file:hover{color:var(--text)}
+.code-editor{border-top:1px solid var(--border-soft);padding:.6rem .7rem;background:#0b0f18}
+.code-edit{width:100%;min-height:220px;background:#070a11;color:#cbd5e6;border:1px solid var(--border);border-radius:8px;font-family:"Cascadia Code",ui-monospace,monospace;font-size:.76rem;line-height:1.5;padding:.6rem;resize:vertical;white-space:pre;tab-size:2}
+.editor-actions{display:flex;gap:8px;margin-top:8px}
+.editor-actions .btn{padding:.4rem .8rem;font-size:.82rem}

@@ -10,6 +10,13 @@ function sanitize(name) {
   return (name || "Game").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "") || "Game";
 }
 
+// Resolve `rel` inside `root`, returning null if it would escape (path-traversal guard).
+function safeJoin(root, rel) {
+  const rootR = path.resolve(root);
+  const target = path.resolve(path.join(rootR, String(rel || "").replace(/\\/g, "/")));
+  return target === rootR || target.startsWith(rootR + path.sep) ? target : null;
+}
+
 function writeProject(engine, baseDir, data, opts = {}) {
   fs.mkdirSync(baseDir, { recursive: true });
   if (engine === "roblox") return writeRobloxPlace(baseDir, data, opts);
@@ -197,6 +204,6 @@ function writeStandaloneHtml(projectRoot) {
 }
 
 module.exports = {
-  sanitize, writeProject, writeUnityProject, writeRobloxPlace, writeWebProject,
+  sanitize, safeJoin, writeProject, writeUnityProject, writeRobloxPlace, writeWebProject,
   buildRbxlx, cdata, xmlEsc, inlineHtmlAssets, writeStandaloneHtml, mimeForExt,
 };
