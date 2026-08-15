@@ -55,6 +55,9 @@ stop you:
   (all assets inlined) that runs anywhere and is **itch.io-ready**.
 - **⚙️ Settings** — manage your free API keys per provider (paste several to
   auto-rotate, switch the active provider) and point the app at your `Unity.exe`.
+- **🧩 Starter templates** — instant, ready-made Web games (Snake, Pong, Flappy)
+  with **no AI, no wait, no quota**. Create one, then Play, edit its code, or keep
+  chatting to refine it.
 - **Three engines** — generate for **Unity (C#)**, **Roblox Studio (Luau)**, or
   **Web (HTML5/JS)** from the same window; pick the engine per chat.
 - **Web games play instantly** — the Web engine writes ONE self-contained

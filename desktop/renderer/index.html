@@ -53,6 +53,7 @@
       <!-- Conversations sidebar -->
       <aside class="side">
         <button class="btn btn-primary btn-block" id="new-chat" title="New chat (Ctrl+N)">＋ New chat</button>
+        <button class="btn btn-ghost btn-block" id="templates-btn">🧩 Templates</button>
         <button class="btn btn-ghost btn-block" id="library-btn">📁 My projects</button>
         <input id="convo-search" class="side-search" type="search" placeholder="Search chats…  (Ctrl+K)" />
         <div class="convos" id="convos"></div>
@@ -103,6 +104,18 @@
           <div class="status" id="gen-status"></div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- Templates modal -->
+  <div class="modal hidden" id="templates-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Starter templates</h2>
+        <button class="link" id="templates-close">✕ Close</button>
+      </div>
+      <p class="sub">Instant, ready-made Web games — no AI, no wait. Create one, then Play, edit the code, or keep chatting to refine it.</p>
+      <div class="library-list" id="templates-list"></div>
     </div>
   </div>
 
