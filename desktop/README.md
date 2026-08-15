@@ -6,6 +6,15 @@ website. **Free to run**: it uses a free AI provider (no paid Claude key).
 Connect once, describe a game in plain language, and the app writes a
 ready-to-open project and can **auto-open it in the engine** for you.
 
+### No more "Unterminated string in JSON"
+
+Big games used to get cut off by the model's output-token limit, which produced
+a broken response (*"Unterminated string in JSON…"*). Now the app **detects the
+cut-off and automatically retries with a much larger token budget**, uses
+per-provider output caps, and — as a last resort — **salvages** the valid files
+out of a truncated response instead of failing. Bigger default **Length**
+(Standard / Long / Max) too.
+
 ### Never run out of free AI
 
 Free online providers have quotas that eventually get exhausted. UnityGUI fights

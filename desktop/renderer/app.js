@@ -58,7 +58,7 @@ async function init(){
   $("#provider").value=cfg.provider; activeProvider=cfg.provider;
   $("#engine").value=cfg.engine||"unity"; currentEngine=cfg.engine||"unity";
   $("#style").value=cfg.style||"auto";
-  $("#length").value=String(cfg.maxTokens||16000);
+  $("#length").value=String(cfg.maxTokens||20000);
   $("#auto-open").checked=cfg.autoOpen!==false;
   renderGenres();
   refreshConnectForm();

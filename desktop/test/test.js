@@ -93,6 +93,32 @@ test("parseResult: repairs trailing commas", () => {
   assert.strictEqual(d.ok, true);
   assert.strictEqual(d.files.length, 2);
 });
+test("parseResult: recovers a truncated response (Unterminated string)", () => {
+  // Simulates output cut off by the token limit mid-way through a code string.
+  const truncated = '{"game_name":"Big","summary":"s","files":[{"path":"A.cs","content":"line1\\nline2\\nunterminated code that never clos';
+  const d = llm.parseResult(truncated);
+  assert.strictEqual(d.game_name, "Big");
+  assert.ok(Array.isArray(d.files) && d.files.length === 1, "recovered the in-progress file");
+  assert.ok(d.files[0].content.startsWith("line1"), "kept the partial content");
+});
+test("parseResult: recovers when cut off between files (drops incomplete tail)", () => {
+  const truncated = '{"game_name":"G","files":[{"path":"A.cs","content":"ok"},{"path":"B.cs","content":"half';
+  const d = llm.parseResult(truncated);
+  assert.strictEqual(d.game_name, "G");
+  assert.ok(d.files.length >= 1 && d.files[0].content === "ok", "kept the complete first file");
+});
+test("isTruncated: recognises MAX_TOKENS / length finish reasons", () => {
+  assert.ok(llm.isTruncated("MAX_TOKENS"));
+  assert.ok(llm.isTruncated("length"));
+  assert.ok(!llm.isTruncated("stop"));
+  assert.ok(!llm.isTruncated(null));
+});
+test("extractBalanced / closeTruncated behave", () => {
+  assert.strictEqual(llm.extractBalanced('{"a":1} trailing'), '{"a":1}');
+  assert.strictEqual(llm.extractBalanced('{"a":1'), null); // truncated → no balanced object
+  const closed = llm.closeTruncated('{"a":"b');
+  assert.deepStrictEqual(JSON.parse(closed), { a: "b" });
+});
 
 // ---- model availability detection ------------------------------------------
 test("isModelUnavailable: recognises retired-model errors and 404", () => {
