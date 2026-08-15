@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("api", {
   ollamaStatus: () => ipcRenderer.invoke("ollama:status"),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   setKeys: (payload) => ipcRenderer.invoke("keys:set", payload),
+  listTemplates: () => ipcRenderer.invoke("templates:list"),
+  createTemplate: (id) => ipcRenderer.invoke("templates:create", id),
 
   listConvos: () => ipcRenderer.invoke("convos:list"),
   getConvo: (id) => ipcRenderer.invoke("convos:get", id),

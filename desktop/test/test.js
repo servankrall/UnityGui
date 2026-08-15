@@ -14,6 +14,7 @@ const zip = require("../lib/zip");
 const unity = require("../lib/unity");
 const art = require("../lib/art");
 const staticServer = require("../lib/server");
+const templates = require("../lib/templates");
 const http = require("http");
 
 let passed = 0;
@@ -424,6 +425,21 @@ test("generateResilient: image requires Gemini (errors without a Gemini key)", a
     () => llm.generateResilient(cfg, "sys", "hi", true, 100, { images: [{ mime: "image/png", data: "AAAA" }], retriesPer429: 0, sleep: async () => {} }),
     /Gemini/,
   );
+});
+
+// ---- starter templates -----------------------------------------------------
+test("templates: catalog is well-formed self-contained web games", () => {
+  const list = templates.list();
+  assert.ok(list.length >= 3, "has starter templates");
+  for (const meta of list) {
+    assert.ok(meta.id && meta.name && meta.summary, "template has id/name/summary");
+    const t = templates.byId(meta.id);
+    assert.strictEqual(t.engine, "web");
+    assert.ok(/<!doctype html>/i.test(t.html) && /<canvas/i.test(t.html), "full HTML with a canvas");
+    assert.ok(t.html.includes("__ready"), "signals ready for the smoke test");
+    assert.ok(!t.html.includes("http://") && !t.html.includes("https://"), "no external resources");
+  }
+  assert.strictEqual(templates.byId("nope"), null);
 });
 
 // ---- Play on phone (static server) -----------------------------------------

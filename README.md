@@ -57,6 +57,8 @@ on it writes the project and opens it in the engine for you. You just press Play
   Retro…) that enrich your prompt before generating.
 - **Chats + refine** — every game is a saved conversation; keep chatting
   (“make it faster”, “add enemies”) and the whole game regenerates in place.
+- **🧩 Starter templates** — instant, ready-made Web games (Snake, Pong, Flappy)
+  created with **no AI and no wait**; then Play, edit the code, or refine in chat.
 - **42 genre quick-starts + ✨ Enhance** — one-tap starter prompts per engine, and
   an Enhance button that expands a one-line idea into a full brief.
 - **In-app code editor** — read/copy any generated file and **edit it in-app**:
@@ -76,7 +78,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.16` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.17` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 

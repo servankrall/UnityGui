@@ -90,6 +90,9 @@ async function init(){
   $("#settings-btn").addEventListener("click",openSettings);
   $("#settings-close").addEventListener("click",()=>$("#settings-modal").classList.add("hidden"));
   $("#settings-modal").addEventListener("click",e=>{if(e.target.id==="settings-modal")$("#settings-modal").classList.add("hidden");});
+  $("#templates-btn").addEventListener("click",openTemplates);
+  $("#templates-close").addEventListener("click",()=>$("#templates-modal").classList.add("hidden"));
+  $("#templates-modal").addEventListener("click",e=>{if(e.target.id==="templates-modal")$("#templates-modal").classList.add("hidden");});
   $("#set-unity-btn").addEventListener("click",async()=>{const r=await window.api.pickUnityExe();if(r&&r.ok){toast("Unity path set ✓");openSettings();}});
   $("#enhance-btn").addEventListener("click",onEnhance);
   $("#attach-btn").addEventListener("click",onAttach);
@@ -235,6 +238,33 @@ async function openSettings(){
     toast("Active provider changed ✓");await refreshConnState();openSettings();
   }));
   box.querySelectorAll(".set-getkey").forEach(b=>b.addEventListener("click",()=>window.api.openExternal(b.dataset.url)));
+}
+
+// ---- Starter templates -----------------------------------------------------
+async function openTemplates(){
+  const items=await window.api.listTemplates();
+  $("#templates-modal").classList.remove("hidden");
+  $("#templates-list").innerHTML=items.map((t,i)=>`
+    <div class="lib-row">
+      <div class="lib-thumb placeholder">${esc(t.icon||"🎮")}</div>
+      <div class="lib-main"><div class="lib-name">${esc(t.name)}</div><div class="convo-meta">${esc(t.summary||"")}</div></div>
+      <div class="lib-actions"><button class="btn btn-primary tpl-create" data-id="${esc(t.id)}">Create</button></div>
+    </div>`).join("");
+  $("#templates-list").querySelectorAll(".tpl-create").forEach(b=>b.addEventListener("click",()=>onCreateTemplate(b.dataset.id)));
+}
+async function onCreateTemplate(id){
+  $("#templates-modal").classList.add("hidden");
+  setStatus($("#gen-status"),"Creating template…",false,true);
+  const r=await window.api.createTemplate(id);
+  if(!r||!r.ok){setStatus($("#gen-status"),(r&&r.error)||"Couldn't create the template.",true);return;}
+  conversationId=r.conversationId;
+  const c=await window.api.getConvo(conversationId); currentTurns=c?c.turns:[];
+  const last=currentTurns[currentTurns.length-1];
+  if(last&&r.saved){ if(r.saved.openTarget)last._openTarget=r.saved.openTarget; if(r.saved.root)last._root=r.saved.root; if(r.saved.thumb)last._thumb=r.saved.thumb; }
+  currentEngine="web"; $("#engine").value="web"; $("#engine").disabled=true;
+  renderTurns(); await refreshConvos();
+  setStatus($("#gen-status"),"Template ready ✓ — Play it, edit the code, or refine it in chat.",false);
+  toast("Template created ✓");
 }
 
 // ---- Project library -------------------------------------------------------

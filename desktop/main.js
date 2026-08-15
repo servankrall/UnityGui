@@ -17,6 +17,7 @@ const zip = require("./lib/zip");
 const unity = require("./lib/unity");
 const art = require("./lib/art");
 const staticServer = require("./lib/server");
+const templates = require("./lib/templates");
 
 const CONFIG_PATH = () => path.join(app.getPath("userData"), "config.json");
 const CONVOS_PATH = () => path.join(app.getPath("userData"), "conversations.json");
@@ -183,6 +184,23 @@ ipcMain.handle("connect:test", async (_e, { provider, apiKey, model }) => {
     const { text, model: used } = await callLLM(provider, key, model || PROVIDERS[provider].defaultModel, "You are a connectivity check.", "Reply with the single word OK.", false, 20);
     return { ok: true, sample: (text || "").trim().slice(0, 40), model: used };
   } catch (e) { return { ok: false, error: e.message }; }
+});
+
+// ---- IPC: starter templates (instant, no AI) -------------------------------
+ipcMain.handle("templates:list", () => templates.list());
+ipcMain.handle("templates:create", async (_e, id) => {
+  const tpl = templates.byId(id);
+  if (!tpl) return { ok: false, error: "Unknown template." };
+  const data = { game_name: tpl.name, engine: "web", summary: tpl.summary, setup_notes: tpl.setup || "", files: [{ path: "index.html", content: tpl.html }] };
+  const convo = { id: "c" + Date.now(), title: tpl.name.slice(0, 48), engine: "web", createdAt: Date.now(), updatedAt: Date.now(), turns: [{ prompt: "Template: " + tpl.name, result: data }] };
+  upsertConvo(convo);
+  let saved = null;
+  try {
+    saved = writers.writeProject("web", DEFAULT_OUT(), data, {});
+    shell.openPath(saved.openTarget);
+    try { const t = await captureWebThumb(saved.openTarget, path.join(saved.root, "thumb.png")); if (t) saved.thumb = t; } catch {}
+  } catch (e) { saved = { error: e.message }; }
+  return { ok: true, data, conversationId: convo.id, saved };
 });
 
 // ---- IPC: conversations ----------------------------------------------------
