@@ -282,6 +282,8 @@ function renderTurns(){
   const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn"), zipBtn=box.querySelector("#zip-btn"), previewBtn=box.querySelector("#preview-btn"), htmlBtn=box.querySelector("#html-btn");
   if(openBtn) openBtn.addEventListener("click",()=>openInEngine(last));
   if(htmlBtn) htmlBtn.addEventListener("click",()=>onStandalone(last));
+  const checkBtn=box.querySelector("#check-btn");
+  if(checkBtn) checkBtn.addEventListener("click",()=>onCheckFix(last));
   if(previewBtn) previewBtn.addEventListener("click",async()=>{
     if(!last._openTarget){toast("Generate first");return;}
     const r=await window.api.previewGame(last._openTarget);
@@ -343,6 +345,7 @@ function turnHtml(t,idx,isLast){
         ${d.engine==="web"?`<button class="btn btn-ember" id="preview-btn">▶ Play preview</button>`:`<button class="btn btn-ember" id="open-btn">▶ Open in ${esc((engineName||"engine").split(" ")[0])}</button>`}
         <button class="btn btn-ghost" id="save-btn">💾 Save to…</button>
         <button class="btn btn-ghost" id="zip-btn" title="Export the whole project as a shareable .zip">📦 Share .zip</button>
+        ${d.engine==="web"?`<button class="btn btn-ghost" id="check-btn" title="Run the game and auto-fix any runtime errors">🔧 Check &amp; fix</button>`:""}
         ${d.engine==="web"?`<button class="btn btn-ghost" id="html-btn" title="Export one self-contained .html (itch.io-ready)">📄 Single .html</button>`:""}
         <button class="btn btn-ghost" id="regen-btn" title="Regenerate this from the same prompt">🔁 Regenerate</button>
       </div>`:""}
@@ -481,6 +484,21 @@ async function onSaveFile(t,i,det){
   det.querySelector(".code").classList.remove("hidden");
   toast("Saved ✓");
   if(t.result.engine==="web"&&t._openTarget){ window.api.previewGame(t._openTarget); setStatus($("#gen-status"),"Saved & re-launched preview ✓",false); }
+}
+
+async function onCheckFix(t){
+  if(!t||!t._openTarget){toast("Generate first");return;}
+  const btn=document.querySelector("#check-btn"); if(btn)btn.disabled=true;
+  setStatus($("#gen-status"),"Running the game and checking for errors…",false,true);
+  const r=await window.api.checkWeb(t._openTarget);
+  if(btn)btn.disabled=false;
+  if(!r||!r.ok){setStatus($("#gen-status"),(r&&r.error)||"Couldn't run the check.",true);return;}
+  if(!r.errors.length){setStatus($("#gen-status"),"No runtime errors found ✓",false);toast("No errors ✓");return;}
+  setStatus($("#gen-status"),"Found "+r.errors.length+" runtime error(s).",true);
+  if(confirm("Found "+r.errors.length+" runtime error(s):\n\n"+r.errors.slice(0,5).join("\n")+"\n\nLet the AI auto-fix them?")){
+    const g=await runGenerate({conversationId,fixErrors:r.errors},"Auto-fixing runtime errors…");
+    if(g&&g.ok){ const t2=currentTurns[currentTurns.length-1]; setStatus($("#gen-status"),"Fixed & re-generated ✓ — click 🔧 Check & fix again to verify.",false); }
+  }
 }
 
 async function onStandalone(t){

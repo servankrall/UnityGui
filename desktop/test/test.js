@@ -75,6 +75,13 @@ test("prompt: refine embeds instruction + previous file contents", () => {
   assert.ok(/make it faster/.test(r));
   assert.ok(/print\('hi'\)/.test(r));
 });
+test("prompt: buildFixPrompt lists the runtime errors to fix", () => {
+  const p = prompts.buildFixPrompt(["ReferenceError: foo is not defined", "TypeError: bar"]);
+  assert.ok(/runtime errors|console errors/i.test(p));
+  assert.ok(p.includes("ReferenceError: foo is not defined"));
+  assert.ok(p.includes("TypeError: bar"));
+  assert.ok(/full corrected game/i.test(p));
+});
 test("prompt: enhance prompt carries the idea + engine", () => {
   const r = prompts.buildEnhancePrompt("roblox", "a lava obby");
   assert.ok(/lava obby/.test(r));

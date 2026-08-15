@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld("api", {
   standaloneHtml: (root) => ipcRenderer.invoke("web:standalone", root),
   listProjects: () => ipcRenderer.invoke("projects:list"),
   previewGame: (p) => ipcRenderer.invoke("preview:open", p),
+  checkWeb: (p) => ipcRenderer.invoke("web:check", p),
   openUnity: (root) => ipcRenderer.invoke("unity:open", root),
   locateUnity: () => ipcRenderer.invoke("unity:locate"),
   pickUnityExe: () => ipcRenderer.invoke("unity:pickExe"),
