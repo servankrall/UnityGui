@@ -54,6 +54,7 @@
       <aside class="side">
         <button class="btn btn-primary btn-block" id="new-chat">＋ New chat</button>
         <button class="btn btn-ghost btn-block" id="library-btn">📁 My projects</button>
+        <input id="convo-search" class="side-search" type="search" placeholder="Search chats…" />
         <div class="convos" id="convos"></div>
       </aside>
 
@@ -93,6 +94,7 @@
           <div class="modifiers" id="modifiers"></div>
           <div class="composer-row">
             <button class="btn btn-ghost" id="attach-btn" title="Attach a reference image (Gemini reads it)">📎 Image</button>
+            <button class="btn btn-ghost" id="art-btn" title="Generate free AI art from your prompt and attach it">🎨 AI art</button>
             <button class="btn btn-ghost" id="enhance-btn" title="Expand your idea into a detailed brief">✨ Enhance</button>
             <div class="attach-chip hidden" id="attach-chip">
               <img id="attach-thumb" alt="" /><span id="attach-name"></span>

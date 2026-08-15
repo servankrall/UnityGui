@@ -34,9 +34,11 @@ on it writes the project and opens it in the engine for you. You just press Play
   project automatically** (no Hub “Add” step; point it at `Unity.exe` once if
   needed); Web games **▶ Play preview** in-app instantly; Roblox opens the
   `.rbxlx` in Studio.
-- **📎 Reference image** — attach a photo and the free **Gemini** vision model
+- **📎 Reference image & 🎨 free AI art** — attach a photo, or **generate art from
+  your prompt with zero-key AI** (Pollinations); the free **Gemini** vision model
   designs the game to match it, embedded as a **real asset** (Web `assets/` sprite,
   Unity `Resources/` texture).
+- **🔎 Search your chats** — filter saved conversations from the sidebar.
 - **📄 Single-file `.html`** — export a Web game as one self-contained, itch.io-ready
   HTML file (all assets inlined).
 - **⚙️ Settings** — per-provider API-key manager (multi-key auto-rotate + switch
@@ -65,7 +67,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.9` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.10` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 

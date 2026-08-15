@@ -37,10 +37,12 @@ stop you:
   yourself.” When a Unity game is generated the app **launches the Unity Editor
   on the project directly** (it auto-finds your Unity Hub install; if it can’t,
   click **▶ Open in Unity** once to point it at your `Unity.exe`). You just press Play.
-- **📎 Attach a reference image** — add a photo/screenshot and the AI (free
-  **Gemini** vision) designs the game to match its subject, colours and style.
-  The image is embedded as a **real asset** — `assets/reference.png` for Web and
-  `Resources/reference.png` for Unity (`Resources.Load<Texture2D>("reference")`).
+- **📎 Reference image & 🎨 free AI art** — attach a photo/screenshot, or **generate
+  art from your prompt with no key at all** (via Pollinations). The AI (free
+  **Gemini** vision) designs the game to match it, and the image is embedded as a
+  **real asset** — `assets/reference.png` for Web, `Resources/reference.png` for
+  Unity (`Resources.Load<Texture2D>("reference")`).
+- **🔎 Search chats** — a search box filters your saved conversations.
 - **📄 Single-file `.html`** — export a Web game as one self-contained HTML file
   (all assets inlined) that runs anywhere and is **itch.io-ready**.
 - **⚙️ Settings** — manage your free API keys per provider (paste several to
