@@ -98,6 +98,17 @@ async function init(){
   $("#generate-btn").addEventListener("click",onGenerate);
   $("#prompt").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")onGenerate();});
 
+  // global keyboard shortcuts
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape"){ const open=[...document.querySelectorAll(".modal:not(.hidden)")]; if(open.length){open.forEach(m=>m.classList.add("hidden"));e.preventDefault();} return; }
+    if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey){
+      const appVisible=!$("#app-view").classList.contains("hidden");
+      const k=e.key.toLowerCase();
+      if(k==="k"&&appVisible){ e.preventDefault(); $("#convo-search").focus(); }
+      else if(k==="n"&&appVisible){ e.preventDefault(); newChat(); }
+    }
+  });
+
   if(cfg.connected){ await refreshConvos(); if(!currentTurns.length) newChat(); }
 }
 
@@ -148,15 +159,21 @@ async function refreshConvos(){
 }
 function renderConvos(){
   const q=convoQuery.trim().toLowerCase();
-  const list=q?allConvos.filter(c=>((c.title||"")+" "+(ENGINES[c.engine]||c.engine||"")).toLowerCase().includes(q)):allConvos;
+  const filtered=q?allConvos.filter(c=>((c.title||"")+" "+(ENGINES[c.engine]||c.engine||"")).toLowerCase().includes(q)):allConvos;
+  const list=filtered.slice().sort((a,b)=>(b.favorite?1:0)-(a.favorite?1:0)); // favorites first (stable)
   $("#convos").innerHTML=list.length?list.map(c=>`
     <div class="convo ${c.id===conversationId?"active":""}" data-id="${c.id}">
+      <button class="convo-star ${c.favorite?"on":""}" data-star="${c.id}" title="Favorite">${c.favorite?"★":"☆"}</button>
       <div class="convo-main">
         <div class="convo-title">${esc(c.title||"Untitled")}</div>
         <div class="convo-meta">${ENGINES[c.engine]?esc(ENGINES[c.engine].split(" ")[0]):esc(c.engine)} · ${c.turns} msg</div>
       </div>
       <button class="convo-del" data-del="${c.id}" title="Delete">✕</button>
     </div>`).join(""):(q?`<div class="convo-empty">No chats match “${esc(convoQuery)}”.</div>`:`<div class="convo-empty">No chats yet. Start one below.</div>`);
+  document.querySelectorAll("#convos .convo-star").forEach(b=>b.addEventListener("click",async e=>{
+    e.stopPropagation(); const id=b.dataset.star, c=allConvos.find(x=>x.id===id), nv=!(c&&c.favorite);
+    await window.api.favoriteConvo(id,nv); if(c)c.favorite=nv; renderConvos();
+  }));
   document.querySelectorAll("#convos .convo").forEach(el=>el.addEventListener("click",e=>{
     if(e.target.dataset.del)return; selectConvo(el.dataset.id);
   }));

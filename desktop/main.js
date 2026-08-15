@@ -185,9 +185,10 @@ ipcMain.handle("connect:test", async (_e, { provider, apiKey, model }) => {
 });
 
 // ---- IPC: conversations ----------------------------------------------------
-ipcMain.handle("convos:list", () => loadConvos().map(c => ({ id: c.id, title: c.title, engine: c.engine, updatedAt: c.updatedAt, turns: c.turns.length })));
+ipcMain.handle("convos:list", () => loadConvos().map(c => ({ id: c.id, title: c.title, engine: c.engine, updatedAt: c.updatedAt, turns: c.turns.length, favorite: !!c.favorite })));
 ipcMain.handle("convos:get", (_e, id) => getConvo(id) || null);
 ipcMain.handle("convos:delete", (_e, id) => { saveConvos(loadConvos().filter(c => c.id !== id)); return true; });
+ipcMain.handle("convos:favorite", (_e, { id, favorite }) => { const c = getConvo(id); if (!c) return false; c.favorite = !!favorite; upsertConvo(c); return true; });
 ipcMain.handle("convos:rename", (_e, { id, title }) => {
   const convo = getConvo(id); if (!convo) return false;
   convo.title = String(title || "").slice(0, 60) || convo.title; convo.updatedAt = Date.now(); upsertConvo(convo); return true;
