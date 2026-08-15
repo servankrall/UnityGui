@@ -79,6 +79,9 @@ async function init(){
   $("#length").addEventListener("change",()=>window.api.saveConfig({maxTokens:+$("#length").value}));
   $("#auto-open").addEventListener("change",()=>window.api.saveConfig({autoOpen:$("#auto-open").checked}));
   $("#new-chat").addEventListener("click",newChat);
+  $("#library-btn").addEventListener("click",openLibrary);
+  $("#library-close").addEventListener("click",()=>$("#library-modal").classList.add("hidden"));
+  $("#library-modal").addEventListener("click",e=>{if(e.target.id==="library-modal")$("#library-modal").classList.add("hidden");});
   $("#enhance-btn").addEventListener("click",onEnhance);
   $("#generate-btn").addEventListener("click",onGenerate);
   $("#prompt").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")onGenerate();});
@@ -152,6 +155,39 @@ function startRename(titleEl){
   inp.addEventListener("blur",()=>commit(true));
 }
 
+// ---- Project library -------------------------------------------------------
+async function openLibrary(){
+  const modal=$("#library-modal"), listEl=$("#library-list");
+  modal.classList.remove("hidden");
+  listEl.innerHTML='<div class="convo-empty">Loading…</div>';
+  const items=await window.api.listProjects();
+  $("#library-sub").textContent=items.length
+    ? items.length+" saved project"+(items.length>1?"s":"")+" · in Documents ▸ UnityGUI Games"
+    : "No projects yet — generate a game and it'll appear here.";
+  if(!items.length){listEl.innerHTML='<div class="convo-empty">Nothing saved yet.</div>';return;}
+  listEl.innerHTML=items.map((p,i)=>{
+    const eng=ENGINES[p.engine]?ENGINES[p.engine].split(" ")[0]:p.engine;
+    const openLbl=p.engine==="web"?"▶ Play":"▶ Open";
+    return `<div class="lib-row">
+      <div class="lib-main"><div class="lib-name">${esc(p.name)}</div><div class="convo-meta">${esc(eng)}</div></div>
+      <div class="lib-actions">
+        <button class="btn btn-ghost lib-open" data-i="${i}">${openLbl}</button>
+        <button class="btn btn-ghost lib-folder" data-i="${i}" title="Reveal in folder">📂</button>
+        <button class="btn btn-ghost lib-zip" data-i="${i}" title="Export as .zip">📦</button>
+      </div>
+    </div>`;
+  }).join("");
+  listEl.querySelectorAll(".lib-open").forEach(b=>b.addEventListener("click",()=>{
+    const p=items[+b.dataset.i];
+    if(p.engine==="web") window.api.previewGame(p.openTarget); else window.api.openPath(p.openTarget);
+  }));
+  listEl.querySelectorAll(".lib-folder").forEach(b=>b.addEventListener("click",()=>window.api.revealPath(items[+b.dataset.i].openTarget)));
+  listEl.querySelectorAll(".lib-zip").forEach(b=>b.addEventListener("click",async()=>{
+    const r=await window.api.zipDir(items[+b.dataset.i].path);
+    if(r&&r.ok){toast("Zipped ✓");window.api.revealPath(r.zipPath);}else toast((r&&r.error)||"Zip failed");
+  }));
+}
+
 function newChat(){
   conversationId=null; currentTurns=[];
   $("#turns").innerHTML=`<div class="turns-empty"><div class="art">🎮</div><h2>New chat</h2><p>Pick an engine, tap a genre or describe a game, then press Generate. Keep chatting to refine it.</p></div>`;
@@ -176,8 +212,13 @@ function renderTurns(){
   box.innerHTML=currentTurns.map((t,i)=>turnHtml(t,i,i===currentTurns.length-1)).join("");
   // wire per-turn actions
   const last=currentTurns[currentTurns.length-1];
-  const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn"), zipBtn=box.querySelector("#zip-btn");
+  const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn"), zipBtn=box.querySelector("#zip-btn"), previewBtn=box.querySelector("#preview-btn");
   if(openBtn) openBtn.addEventListener("click",()=>{ if(last._openTarget) window.api.openPath(last._openTarget); });
+  if(previewBtn) previewBtn.addEventListener("click",async()=>{
+    if(!last._openTarget){toast("Generate first");return;}
+    const r=await window.api.previewGame(last._openTarget);
+    if(r&&!r.ok) toast(r.error||"Couldn't open preview");
+  });
   if(saveBtn) saveBtn.addEventListener("click",()=>onSave(last.result));
   if(zipBtn) zipBtn.addEventListener("click",()=>onShareZip(last.result));
   if(regenBtn) regenBtn.addEventListener("click",onRegenerate);
@@ -208,7 +249,7 @@ function turnHtml(t,idx,isLast){
       ${d.setup_notes?`<div class="notes">${esc(d.setup_notes)}</div>`:""}
       <div class="files">${files}</div>
       ${isLast?`<div class="actions">
-        <button class="btn btn-ember" id="open-btn">▶ Open in ${esc((engineName||"engine").split(" ")[0])}</button>
+        ${d.engine==="web"?`<button class="btn btn-ember" id="preview-btn">▶ Play preview</button>`:`<button class="btn btn-ember" id="open-btn">▶ Open in ${esc((engineName||"engine").split(" ")[0])}</button>`}
         <button class="btn btn-ghost" id="save-btn">💾 Save to…</button>
         <button class="btn btn-ghost" id="zip-btn" title="Export the whole project as a shareable .zip">📦 Share .zip</button>
         <button class="btn btn-ghost" id="regen-btn" title="Regenerate this from the same prompt">🔁 Regenerate</button>

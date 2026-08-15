@@ -52,6 +52,7 @@
       <!-- Conversations sidebar -->
       <aside class="side">
         <button class="btn btn-primary btn-block" id="new-chat">＋ New chat</button>
+        <button class="btn btn-ghost btn-block" id="library-btn">📁 My projects</button>
         <div class="convos" id="convos"></div>
       </aside>
 
@@ -96,6 +97,18 @@
           <div class="status" id="gen-status"></div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- Project library modal -->
+  <div class="modal hidden" id="library-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>My projects</h2>
+        <button class="link" id="library-close">✕ Close</button>
+      </div>
+      <p class="sub" id="library-sub">Every game you generate is saved here.</p>
+      <div class="library-list" id="library-list"></div>
     </div>
   </div>
 

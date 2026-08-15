@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.4)"
+        description: "Release tag to publish (e.g. v1.0.5)"
         required: true
-        default: "v1.0.4"
+        default: "v1.0.5"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -49,18 +49,20 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: UnityGUI ${{ github.event.inputs.tag || github.ref_name }}
           body: |
-            **UnityGUI desktop app** — generate complete **Unity _and_ Roblox Studio** games
-            from a prompt, for free.
+            **UnityGUI desktop app** — generate complete **Unity, Roblox Studio _and_ Web (HTML5)**
+            games from a prompt, for free.
 
             Download `UnityGUI-Setup-*.exe` below and run it (one-click install). Connect a free
             AI provider (Gemini / Groq / Ollama), pick an engine, and describe a game — with
             **Auto-open** on it writes the project and opens it in the engine for you. Keep
             **chatting** to refine the game. You just press Play.
 
-            - **Two engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file
+            - **Three engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file · Web (HTML5/JS) → one `index.html`
+            - **Web games play instantly** in-app with **▶ Play preview** — no engine, no install (procedural art + Web Audio sound)
+            - **📁 My projects** library — re-open / preview / zip every game you've made
             - **Never runs out:** paste multiple keys (auto-rotate), auto-fallback across
               providers, retry rate-limits, and drop to **unlimited local Ollama** (no key/limits)
-            - **32 genre quick-starts**, **✨ Enhance**, in-app **code view**, **🔁 Regenerate**, **📦 Share .zip**
+            - **42 genre quick-starts**, **✨ Enhance**, in-app **code view**, **🔁 Regenerate**, **📦 Share .zip**
             - **Chats + refine**, **Auto-open**, **100% free** (no paid Claude key)
           files: desktop/dist/*.exe
           draft: false

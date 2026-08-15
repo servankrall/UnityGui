@@ -24,17 +24,22 @@ stop you:
 
 ### What's new
 
-- **Two engines** — generate for **Unity (C#)** or **Roblox Studio (Luau)** from
-  the same window; pick the engine per chat.
+- **Three engines** — generate for **Unity (C#)**, **Roblox Studio (Luau)**, or
+  **Web (HTML5/JS)** from the same window; pick the engine per chat.
+- **Web games play instantly** — the Web engine writes ONE self-contained
+  `index.html` (canvas + Web Audio, all procedural art & sound). Hit **▶ Play
+  preview** to play it right inside the app — **no engine, no install, nothing**.
+- **📁 My projects** — a library of every game you've generated; Play/Open,
+  reveal the folder, or export a `.zip` — right from the sidebar.
 - **Share as `.zip`** — export the whole generated project as a single shareable
   zip (opens the folder so you can send it).
 - **Chats** — every game is a conversation. Keep chatting to **refine** it
   (“make it faster”, “add enemies”, “change to night time”) and the whole game
   is regenerated in place. Conversations are saved in the sidebar; double-click a
   chat to rename it.
-- **32 genre quick-starts** (16 per engine) — one-tap starter prompts tailored to
-  the engine (Unity: platformer, shooter, racing, tower defense…; Roblox: obby,
-  tycoon, simulator, escape room…).
+- **42 genre quick-starts** — one-tap starter prompts tailored to the engine
+  (Unity: platformer, shooter, racing, tower defense…; Roblox: obby, tycoon,
+  simulator, escape room…; Web: snake, breakout, flappy, blocks…).
 - **✨ Enhance** — expand a one-line idea into a detailed, buildable brief before
   generating.
 - **In-app code view** — expand any generated file to read the source, with a
@@ -75,6 +80,8 @@ Download the latest **`UnityGUI-Setup-*.exe`** from the repo's
    (Auto / 2D / 3D). Leave **Auto-open when done** on for the hands-off flow.
 3. **Describe your game** and press **✦ Generate**. When it's done the app writes
    the project and (if auto-open is on) opens it in the engine.
+   - **Web** → a single `index.html`. Click **▶ Play preview** to play it in-app
+     immediately — no engine or install needed — or double-click the file in any browser.
    - **Unity** → a complete `Unity-<Game>` project. Open it in **Unity Hub**
      (Add ▸ pick the folder, Unity 2021 LTS+) and press **Play**.
    - **Roblox** → a `<Game>.rbxlx` place file. Double-click it to open **Roblox

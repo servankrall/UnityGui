@@ -2,7 +2,7 @@
 
 # UnityGUI
 
-**Generate complete, playable Unity _and_ Roblox Studio games from a prompt.**
+**Generate complete, playable Unity, Roblox Studio _and_ Web (HTML5) games from a prompt.**
 
 Describe a game → free AI writes a ready-to-run project → the app opens it in the engine → press Play.
 
@@ -30,12 +30,16 @@ The simplest way in — a Windows `.exe` you download from
 connect a **free** AI provider, pick an engine, describe a game — and with **Auto-open**
 on it writes the project and opens it in the engine for you. You just press Play.
 
-- **Two engines** — generate for **Unity (C#)** or **Roblox Studio (Luau)**. Unity
-  gets a full project; Roblox gets a ready-to-open `.rbxlx` place file.
+- **Three engines** — generate for **Unity (C#)**, **Roblox Studio (Luau)**, or
+  **Web (HTML5/JS)**. Unity gets a full project; Roblox a ready-to-open `.rbxlx`
+  place file; Web a single self-contained `index.html` you can **▶ Play preview**
+  in-app instantly — no engine or install needed.
+- **📁 Project library** — every game you generate is saved and re-openable
+  (Play / Open / reveal folder / export `.zip`) from the sidebar.
 - **Chats + refine** — every game is a saved conversation; keep chatting
   (“make it faster”, “add enemies”) and the whole game regenerates in place.
-- **32 genre quick-starts + ✨ Enhance** — one-tap starter prompts (16 per engine),
-  and an Enhance button that expands a one-line idea into a full brief.
+- **42 genre quick-starts + ✨ Enhance** — one-tap starter prompts per engine, and
+  an Enhance button that expands a one-line idea into a full brief.
 - **In-app code view, 🔁 Regenerate, 📦 Share `.zip`** — read/copy any generated
   file, re-roll the latest result, or export the whole project as a shareable zip.
 - **Never runs out of free AI** — paste **multiple keys** to auto-rotate, **fall
@@ -48,7 +52,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.4` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.5` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 
