@@ -43,6 +43,8 @@ stop you:
   **real asset** — `assets/reference.png` for Web, `Resources/reference.png` for
   Unity (`Resources.Load<Texture2D>("reference")`).
 - **🔎 Search chats** — a search box filters your saved conversations.
+- **🔧 Auto QA (Check & fix)** — for Web games, the app runs the game headless,
+  captures runtime/console errors, and the AI **auto-fixes them** in one click.
 - **📄 Single-file `.html`** — export a Web game as one self-contained HTML file
   (all assets inlined) that runs anywhere and is **itch.io-ready**.
 - **⚙️ Settings** — manage your free API keys per provider (paste several to

@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.11)"
+        description: "Release tag to publish (e.g. v1.0.12)"
         required: true
-        default: "v1.0.11"
+        default: "v1.0.12"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -62,6 +62,7 @@ jobs:
             - **📎 Reference image & 🎨 free AI art** — attach a photo, or generate art from your prompt with no key (Pollinations); embedded as a real asset (Web sprite / Unity texture)
             - **🔎 Search chats** · **📄 Single-file `.html`** for Web (itch.io-ready) · **⚙️ Settings** to manage keys + your Unity.exe path
             - **In-app code editor** — for Web games, edit the code and **Save & re-run** the preview instantly
+            - **🔧 Auto QA** — for Web games, catch runtime/console errors and let the AI **auto-fix** them in one click
             - **Web games play instantly** in-app with **▶ Play preview** — no engine, no install (procedural art + Web Audio sound)
             - **📁 My projects** gallery — re-open / preview / zip every game, with auto-captured thumbnails for Web
             - **One-tap prompt “spice”** — Harder · Levels · Power-ups · Particles · Neon · Retro · More SFX · High score

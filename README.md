@@ -58,6 +58,8 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **In-app code editor** — read/copy any generated file, and for Web games
   **edit the code and Save & re-run** the preview instantly. Plus **🔁 Regenerate**
   and **📦 Share `.zip`**.
+- **🔧 Auto QA (Check & fix)** — for Web games, run the game headless, catch
+  runtime/console errors, and let the AI **auto-fix them** in one click.
 - **Never runs out of free AI** — paste **multiple keys** to auto-rotate, **fall
   back across providers** automatically, retry rate-limits, and drop to **unlimited
   local Ollama** (offline, no key, no quota) as the last resort. Current Gemini
@@ -68,7 +70,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.11` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.12` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 

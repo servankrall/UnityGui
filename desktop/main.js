@@ -205,7 +205,7 @@ ipcMain.handle("prompt:enhance", async (_e, { idea, engine }) => {
 });
 
 // ---- IPC: generate (with refine + regenerate + conversation) ---------------
-ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, image }) => {
+ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, image, fixErrors }) => {
   const c = loadConfig();
   if (!isConnected(c)) return { ok: false, error: "Not connected. Add your free API key first." };
 
@@ -217,6 +217,8 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
     prompt = convo.turns[convo.turns.length - 1].prompt;
     convo.turns.pop(); // drop the old result; we'll replace it
   }
+  // Auto-fix: build a "fix these runtime errors" refine instruction.
+  if (fixErrors && fixErrors.length) prompt = prompts.buildFixPrompt(fixErrors);
   if (!prompt || !prompt.trim()) return { ok: false, error: "Describe your game (or a change) first." };
 
   const images = image && image.base64 ? [{ mime: image.mime || "image/png", data: image.base64 }] : null;
@@ -409,6 +411,30 @@ ipcMain.handle("unity:pickExe", async () => {
   const c = loadConfig(); c.unityPath = r.filePaths[0]; saveConfig(c);
   return { ok: true, exe: r.filePaths[0] };
 });
+
+// Run a Web game off-screen and collect runtime / console errors (auto QA).
+ipcMain.handle("web:check", (_e, filePath) => new Promise((resolve) => {
+  let done = false, win = null;
+  const errors = [];
+  const finish = () => { if (done) return; done = true; try { if (win && !win.isDestroyed()) win.destroy(); } catch {} resolve({ ok: true, errors }); };
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return resolve({ ok: false, error: "Nothing to check yet." });
+    win = new BrowserWindow({ show: false, width: 640, height: 480, webPreferences: { offscreen: true, nodeIntegration: false, contextIsolation: true, sandbox: true } });
+    const onConsole = (...args) => {
+      // Electron <30: (event, level, message, …); newer: (event, {level, message})
+      let level, message;
+      if (args[1] && typeof args[1] === "object") { level = args[1].level; message = args[1].message; }
+      else { level = args[1]; message = args[2]; }
+      const isErr = level === 3 || level === "error";
+      if (isErr && message) { const m = String(message).trim(); if (m && !errors.includes(m)) errors.push(m.slice(0, 400)); }
+    };
+    win.webContents.on("console-message", onConsole);
+    win.webContents.on("render-process-gone", () => { errors.push("The game crashed (renderer process gone)."); finish(); });
+    win.webContents.once("did-fail-load", (_e2, code, desc) => { if (code !== -3) errors.push("Failed to load: " + (desc || code)); });
+    win.loadFile(filePath);
+    setTimeout(finish, 3200); // let the game boot + first frames run
+  } catch (e) { resolve({ ok: false, error: e.message }); }
+}));
 
 // In-app playable preview (Web games): open the HTML in an isolated window.
 ipcMain.handle("preview:open", (_e, filePath) => {

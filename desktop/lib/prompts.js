@@ -129,6 +129,12 @@ OUTPUT — respond with ONLY a single JSON object, no markdown or code fences, w
 Do not include XML tags such as <thinking>.`;
 }
 
+// Turn captured runtime errors into a concrete "fix these" refine instruction.
+function buildFixPrompt(errors) {
+  const list = (errors || []).slice(0, 8).map(e => "- " + String(e).slice(0, 300)).join("\n");
+  return `The game produced these runtime errors / console errors when it ran. Fix ALL of them and return the full corrected game (same JSON shape):\n${list}`;
+}
+
 function buildRefinePrompt(prevResult, instruction) {
   const files = ((prevResult && prevResult.files) || []).map(f => {
     const name = f.path || f.name || "file";
@@ -150,6 +156,6 @@ function buildEnhancePrompt(engine, idea) {
 
 module.exports = {
   styleLine, GENRES, genresFor, MODIFIERS,
-  buildSystemPrompt, buildRefinePrompt,
+  buildSystemPrompt, buildRefinePrompt, buildFixPrompt,
   ENHANCE_SYSTEM, buildEnhancePrompt,
 };
