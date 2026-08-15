@@ -84,6 +84,20 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 .lib-actions{display:flex;gap:6px;flex-shrink:0}
 .lib-actions .btn{padding:.4rem .7rem;font-size:.82rem}
 
+/* library: tag filter + per-project tags (collections) */
+.lib-filter{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.lib-tagfilter{display:flex;flex-wrap:wrap;gap:6px}
+.lib-tagfilter:empty{display:none}
+.chip-btn.tagf.on{background:rgba(124,92,255,.16);border-color:var(--violet);color:var(--text)}
+.chip-btn.tagf .tagc{font-size:.68rem;color:var(--dim);margin-left:.15rem}
+.lib-tags{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:5px}
+.lib-tag{display:inline-flex;align-items:center;gap:3px;font-size:.72rem;color:var(--violet2);background:rgba(124,92,255,.12);border:1px solid var(--border-soft);border-radius:var(--rp);padding:.1rem .5rem}
+.lib-tag-x{background:none;border:0;color:var(--dim);cursor:pointer;font-size:.66rem;padding:0;line-height:1}
+.lib-tag-x:hover{color:#ff8a8a}
+.lib-tag-add{background:none;border:1px dashed var(--border);color:var(--dim);cursor:pointer;font-size:.72rem;border-radius:var(--rp);padding:.1rem .5rem}
+.lib-tag-add:hover{color:var(--text);border-color:var(--violet)}
+.lib-tag-input{font:inherit;font-size:.72rem;width:96px;padding:.1rem .4rem;border-radius:var(--rp);border:1px solid var(--violet);background:var(--surface2);color:var(--text)}
+
 /* settings rows */
 .set-row{display:flex;align-items:flex-start;gap:10px;padding:.7rem .75rem;border:1px solid var(--border-soft);border-radius:10px;background:var(--surface);margin-top:8px}
 .set-main{flex:1;min-width:0}

@@ -12,6 +12,9 @@ let allConvos = [];          // cached list for client-side search
 let convoQuery = "";
 let seenTours = { connect: false, app: false }; // which guided tours the user has already seen
 let tour = null;             // active tour: { kind, steps, i }
+let libItems = [];           // cached project list for the library modal
+let libQuery = "";           // library text filter
+let libTags = new Set();     // selected tag "collection" filters (OR)
 
 // One-line example prompts shown on the empty "new chat" screen, per engine.
 const EXAMPLES = {
@@ -95,6 +98,7 @@ async function init(){
   $("#auto-open").addEventListener("change",()=>window.api.saveConfig({autoOpen:$("#auto-open").checked}));
   $("#new-chat").addEventListener("click",newChat);
   $("#library-btn").addEventListener("click",openLibrary);
+  $("#lib-search").addEventListener("input",e=>{libQuery=e.target.value;renderLibrary();});
   $("#library-close").addEventListener("click",()=>$("#library-modal").classList.add("hidden"));
   $("#library-modal").addEventListener("click",e=>{if(e.target.id==="library-modal")$("#library-modal").classList.add("hidden");});
   $("#settings-btn").addEventListener("click",openSettings);
@@ -356,39 +360,111 @@ async function onCreateTemplate(id){
   toast("Template created ✓");
 }
 
-// ---- Project library -------------------------------------------------------
+// ---- Project library (tags / collections) ----------------------------------
 async function openLibrary(){
   const modal=$("#library-modal"), listEl=$("#library-list");
   modal.classList.remove("hidden");
   listEl.innerHTML='<div class="convo-empty">Loading…</div>';
-  const items=await window.api.listProjects();
-  $("#library-sub").textContent=items.length
-    ? items.length+" saved project"+(items.length>1?"s":"")+" · in Documents ▸ UnityGUI Games"
-    : "No projects yet — generate a game and it'll appear here.";
-  if(!items.length){listEl.innerHTML='<div class="convo-empty">Nothing saved yet.</div>';return;}
-  listEl.innerHTML=items.map((p,i)=>{
+  libItems=await window.api.listProjects();
+  // drop any selected tag filters that no longer exist
+  const present=new Set(libItems.flatMap(p=>p.tags||[]));
+  libTags=new Set([...libTags].filter(t=>present.has(t)));
+  renderLibrary();
+}
+function libAllTags(){
+  const counts={};
+  libItems.forEach(p=>(p.tags||[]).forEach(t=>{counts[t]=(counts[t]||0)+1;}));
+  return Object.keys(counts).sort().map(t=>({tag:t,count:counts[t]}));
+}
+function libFiltered(){
+  const q=libQuery.trim().toLowerCase();
+  return libItems.filter(p=>{
+    if(q && !((p.name||"")+" "+(p.tags||[]).join(" ")).toLowerCase().includes(q)) return false;
+    if(libTags.size && !(p.tags||[]).some(t=>libTags.has(t))) return false;
+    return true;
+  });
+}
+function renderLibrary(){
+  const listEl=$("#library-list"), filterEl=$("#lib-tagfilter");
+  const tags=libAllTags();
+  // tag filter chips (a "collection" picker) — hidden when there are no tags yet
+  filterEl.innerHTML=tags.length
+    ? `<button class="chip-btn tagf ${libTags.size?"":"on"}" data-tag="">All</button>`+
+      tags.map(t=>`<button class="chip-btn tagf ${libTags.has(t.tag)?"on":""}" data-tag="${esc(t.tag)}">${esc(t.tag)} <span class="tagc">${t.count}</span></button>`).join("")
+    : "";
+  filterEl.querySelectorAll(".tagf").forEach(b=>b.addEventListener("click",()=>{
+    const t=b.dataset.tag;
+    if(!t) libTags.clear(); else { if(libTags.has(t))libTags.delete(t); else libTags.add(t); }
+    renderLibrary();
+  }));
+
+  const items=libFiltered();
+  const total=libItems.length;
+  $("#library-sub").textContent=!total
+    ? "No projects yet — generate a game and it'll appear here."
+    : (libQuery||libTags.size)
+      ? items.length+" of "+total+" project"+(total>1?"s":"")+" match"
+      : total+" saved project"+(total>1?"s":"")+" · in Documents ▸ UnityGUI Games · add 🏷️ tags to group them";
+
+  if(!total){ listEl.innerHTML='<div class="convo-empty">Nothing saved yet.</div>'; return; }
+  if(!items.length){ listEl.innerHTML='<div class="convo-empty">No projects match this filter.</div>'; return; }
+
+  listEl.innerHTML=items.map((p)=>{
+    const gi=libItems.indexOf(p);
     const eng=ENGINES[p.engine]?ENGINES[p.engine].split(" ")[0]:p.engine;
     const openLbl=p.engine==="web"?"▶ Play":"▶ Open";
     const thumb=p.thumb?`<img class="lib-thumb" src="${p.thumb}" alt="" />`:`<div class="lib-thumb placeholder">${p.engine==="web"?"🌐":p.engine==="roblox"?"🧱":"🎮"}</div>`;
-    return `<div class="lib-row">
+    const tagChips=(p.tags||[]).map(t=>`<span class="lib-tag">${esc(t)}<button class="lib-tag-x" data-i="${gi}" data-tag="${esc(t)}" title="Remove tag">✕</button></span>`).join("");
+    return `<div class="lib-row" data-i="${gi}">
       ${thumb}
-      <div class="lib-main"><div class="lib-name">${esc(p.name)}</div><div class="convo-meta">${esc(eng)}</div></div>
+      <div class="lib-main">
+        <div class="lib-name">${esc(p.name)}</div>
+        <div class="convo-meta">${esc(eng)}</div>
+        <div class="lib-tags">${tagChips}<button class="lib-tag-add" data-i="${gi}" title="Add a tag">🏷️ ＋</button></div>
+      </div>
       <div class="lib-actions">
-        <button class="btn btn-ghost lib-open" data-i="${i}">${openLbl}</button>
-        <button class="btn btn-ghost lib-folder" data-i="${i}" title="Reveal in folder">📂</button>
-        <button class="btn btn-ghost lib-zip" data-i="${i}" title="Export as .zip">📦</button>
+        <button class="btn btn-ghost lib-open" data-i="${gi}">${openLbl}</button>
+        <button class="btn btn-ghost lib-folder" data-i="${gi}" title="Reveal in folder">📂</button>
+        <button class="btn btn-ghost lib-zip" data-i="${gi}" title="Export as .zip">📦</button>
       </div>
     </div>`;
   }).join("");
   listEl.querySelectorAll(".lib-open").forEach(b=>b.addEventListener("click",()=>{
-    const p=items[+b.dataset.i];
+    const p=libItems[+b.dataset.i];
     if(p.engine==="web") window.api.previewGame(p.openTarget); else window.api.openPath(p.openTarget);
   }));
-  listEl.querySelectorAll(".lib-folder").forEach(b=>b.addEventListener("click",()=>window.api.revealPath(items[+b.dataset.i].openTarget)));
+  listEl.querySelectorAll(".lib-folder").forEach(b=>b.addEventListener("click",()=>window.api.revealPath(libItems[+b.dataset.i].openTarget)));
   listEl.querySelectorAll(".lib-zip").forEach(b=>b.addEventListener("click",async()=>{
-    const r=await window.api.zipDir(items[+b.dataset.i].path);
+    const r=await window.api.zipDir(libItems[+b.dataset.i].path);
     if(r&&r.ok){toast("Zipped ✓");window.api.revealPath(r.zipPath);}else toast((r&&r.error)||"Zip failed");
   }));
+  listEl.querySelectorAll(".lib-tag-x").forEach(b=>b.addEventListener("click",()=>removeLibTag(+b.dataset.i,b.dataset.tag)));
+  listEl.querySelectorAll(".lib-tag-add").forEach(b=>b.addEventListener("click",()=>startAddLibTag(+b.dataset.i,b)));
+}
+async function saveLibTags(i,tags){
+  const p=libItems[i]; if(!p)return;
+  const r=await window.api.setProjectTags({name:p.name,tags});
+  p.tags=(r&&r.ok)?r.tags:tags;
+  renderLibrary();
+}
+function removeLibTag(i,tag){
+  const p=libItems[i]; if(!p)return;
+  saveLibTags(i,(p.tags||[]).filter(t=>t!==tag));
+}
+function startAddLibTag(i,btn){
+  const inp=document.createElement("input");
+  inp.className="lib-tag-input"; inp.placeholder="tag…"; inp.maxLength=24;
+  btn.replaceWith(inp); inp.focus();
+  let done=false;
+  const commit=(save)=>{
+    if(done)return; done=true;
+    const v=inp.value.trim();
+    const p=libItems[i];
+    if(save && v && p){ saveLibTags(i,[...(p.tags||[]),v]); }
+    else renderLibrary();
+  };
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter")commit(true);else if(e.key==="Escape")commit(false);});
+  inp.addEventListener("blur",()=>commit(true));
 }
 
 function newChat(){

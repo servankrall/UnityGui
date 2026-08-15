@@ -71,6 +71,10 @@ stop you:
 - **📁 My projects gallery** — a library of every game you've generated, with
   **auto-captured thumbnails** for Web games; Play/Open, reveal the folder, or
   export a `.zip` — right from the sidebar.
+- **🗂️ Tags & collections** — give any project one or more **🏷️ tags**, then
+  **filter the gallery** by tag (click a tag chip) or **search** by name/tag to
+  group your games into collections. Tags are stored locally alongside your
+  projects.
 - **One-tap prompt “spice”** — quick modifier chips (Harder, Levels, Power-ups,
   Particles, Neon, Retro, More SFX, High score…) that enrich your prompt before
   generating.

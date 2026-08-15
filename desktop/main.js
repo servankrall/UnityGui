@@ -18,10 +18,16 @@ const unity = require("./lib/unity");
 const art = require("./lib/art");
 const staticServer = require("./lib/server");
 const templates = require("./lib/templates");
+const { sanitizeTags } = require("./lib/tags");
 
 const CONFIG_PATH = () => path.join(app.getPath("userData"), "config.json");
 const CONVOS_PATH = () => path.join(app.getPath("userData"), "conversations.json");
+const META_PATH = () => path.join(app.getPath("userData"), "projectMeta.json");
 const DEFAULT_OUT = () => path.join(app.getPath("documents"), "UnityGUI Games");
+
+// ---- Project metadata store (tags / collections), keyed by folder name ------
+function loadMeta() { try { const m = JSON.parse(fs.readFileSync(META_PATH(), "utf8")); return m && typeof m === "object" ? m : {}; } catch { return {}; } }
+function saveMeta(m) { try { fs.writeFileSync(META_PATH(), JSON.stringify(m, null, 2)); return true; } catch { return false; } }
 
 // ---- Config store ----------------------------------------------------------
 function loadConfig() {
@@ -495,6 +501,7 @@ ipcMain.handle("projects:list", () => {
   const base = DEFAULT_OUT();
   let names = [];
   try { names = fs.readdirSync(base); } catch { return []; }
+  const meta = loadMeta();
   const out = [];
   for (const name of names) {
     const full = path.join(base, name);
@@ -509,8 +516,19 @@ ipcMain.handle("projects:list", () => {
       const tp = path.join(full, "thumb.png");
       if (fs.existsSync(tp)) thumb = thumbToDataUrl(tp);
     }
-    out.push({ name, path: full, engine, openTarget, mtime: st.mtimeMs, thumb });
+    const tags = (meta[name] && Array.isArray(meta[name].tags)) ? meta[name].tags : [];
+    out.push({ name, path: full, engine, openTarget, mtime: st.mtimeMs, thumb, tags });
   }
   out.sort((a, b) => b.mtime - a.mtime);
   return out;
+});
+// Set the tags (a "collection") for a project folder.
+ipcMain.handle("projects:setTags", (_e, { name, tags }) => {
+  if (!name || typeof name !== "string") return { ok: false, error: "Missing project." };
+  const clean = sanitizeTags(tags);
+  const m = loadMeta();
+  if (clean.length) m[name] = { ...(m[name] || {}), tags: clean };
+  else if (m[name]) { delete m[name].tags; if (!Object.keys(m[name]).length) delete m[name]; }
+  saveMeta(m);
+  return { ok: true, tags: clean };
 });

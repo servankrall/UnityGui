@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.18)"
+        description: "Release tag to publish (e.g. v1.0.19)"
         required: true
-        default: "v1.0.18"
+        default: "v1.0.19"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -68,6 +68,7 @@ jobs:
             - **🎓 Guided tour** — a first-run coach-mark tour walks you through connect → engine → prompt → generate → play (replay anytime with **🎓 Tour**); friendlier empty screen with one-tap examples
             - **Web games play instantly** in-app with **▶ Play preview** — no engine, no install (procedural art + Web Audio sound)
             - **📁 My projects** gallery — re-open / preview / zip every game, with auto-captured thumbnails for Web
+            - **🗂️ Tags & collections** — label projects with 🏷️ tags and filter the gallery by tag (or search) to group your games into collections
             - **One-tap prompt “spice”** — Harder · Levels · Power-ups · Particles · Neon · Retro · More SFX · High score
             - **Fix:** no more *"Unterminated string in JSON"* — big games that hit the token limit
               now auto-retry with a bigger budget (and salvage valid files) instead of erroring

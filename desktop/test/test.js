@@ -15,6 +15,7 @@ const unity = require("../lib/unity");
 const art = require("../lib/art");
 const staticServer = require("../lib/server");
 const templates = require("../lib/templates");
+const { sanitizeTags } = require("../lib/tags");
 const http = require("http");
 
 let passed = 0;
@@ -440,6 +441,22 @@ test("templates: catalog is well-formed self-contained web games", () => {
     assert.ok(!t.html.includes("http://") && !t.html.includes("https://"), "no external resources");
   }
   assert.strictEqual(templates.byId("nope"), null);
+});
+
+// ---- project tags (collections) --------------------------------------------
+test("tags.sanitizeTags: trims, lowercases, dedupes, caps", () => {
+  // from a comma string, with junk + casing + dupes + spacing
+  assert.deepStrictEqual(sanitizeTags("  Fun , fun, Action!!,  co-op  game "), ["fun", "action", "co-op game"]);
+  // from an array, same normalization
+  assert.deepStrictEqual(sanitizeTags(["Neon", "neon", "  "]), ["neon"]);
+  // count cap (default 8)
+  assert.strictEqual(sanitizeTags(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]).length, 8);
+  // length cap per tag (default 24)
+  assert.ok(sanitizeTags(["x".repeat(50)])[0].length === 24);
+  // empties / null → []
+  assert.deepStrictEqual(sanitizeTags(""), []);
+  assert.deepStrictEqual(sanitizeTags(null), []);
+  assert.deepStrictEqual(sanitizeTags([" ", ",", "###"]), []);
 });
 
 // ---- Play on phone (static server) -----------------------------------------
