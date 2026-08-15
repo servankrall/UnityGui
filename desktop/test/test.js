@@ -344,6 +344,23 @@ test("safeJoin: keeps paths inside the project, blocks traversal", () => {
   const abs = writers.safeJoin(root, "/abs/evil");
   assert.ok(abs && abs.startsWith(path.resolve(root)), "absolute-looking rel is contained inside the project");
 });
+test("diskRelFor: maps a file to its on-disk path per engine", () => {
+  assert.strictEqual(writers.diskRelFor("web", { path: "index.html" }), "index.html");
+  assert.strictEqual(writers.diskRelFor("web", { name: "game" }), "game.html"); // ext added
+  assert.strictEqual(writers.diskRelFor("unity", { path: "Assets/UnityGUI/Generated/Boot.cs" }), "Assets/UnityGUI/Generated/Boot.cs");
+  assert.strictEqual(writers.diskRelFor("unity", { name: "Player" }), "Assets/UnityGUI/Generated/Player.cs");
+  assert.strictEqual(writers.diskRelFor("roblox", { name: "World" }), null); // not editable
+});
+test("Unity inline-edit round-trip: diskRelFor points at the written .cs", () => {
+  const dir = mkTmp();
+  const file = { path: "Assets/UnityGUI/Generated/Boot.cs", name: "Boot", content: "// old" };
+  const out = writers.writeUnityProject(dir, { game_name: "Edit", files: [file] });
+  const rel = writers.diskRelFor("unity", file);
+  const target = writers.safeJoin(out.root, rel);
+  assert.ok(target && fs.existsSync(target), "the .cs the writer produced is found via diskRelFor");
+  fs.writeFileSync(target, "// new code", "utf8");
+  assert.strictEqual(fs.readFileSync(target, "utf8"), "// new code");
+});
 test("safeJoin round-trip: an edit written back is read the same", () => {
   const dir = mkTmp();
   const out = writers.writeWebProject(dir, { game_name: "Edit", files: [{ path: "index.html", content: "<canvas>old</canvas>" }] });

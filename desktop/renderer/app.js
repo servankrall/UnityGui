@@ -331,23 +331,24 @@ function renderTurns(){
   box.scrollTop=box.scrollHeight;
 }
 
-function fileBlock(f,i,editable){
+function fileBlock(f,i,editable,engine){
   const name=f.path||f.name||"file";
   const kind=f.kind?` <em>(${esc(f.kind)})</em>`:"";
   const code=f.content||"";
+  const saveLabel=engine==="web"?"💾 Save &amp; re-run":"💾 Save";
   return `<details class="file" data-fi="${i}">
     <summary><span class="fname">${esc(name)}</span>${kind}
       ${editable?`<button class="edit-file" data-fi="${i}" title="Edit code">✏️</button>`:""}
       <button class="copy" title="Copy">⧉</button></summary>
     <pre class="code">${esc(code)}</pre>
-    ${editable?`<div class="code-editor hidden"><textarea class="code-edit" spellcheck="false">${esc(code)}</textarea><div class="editor-actions"><button class="btn btn-primary save-file" data-fi="${i}">💾 Save &amp; re-run</button><button class="btn btn-ghost cancel-edit">Cancel</button></div></div>`:""}
+    ${editable?`<div class="code-editor hidden"><textarea class="code-edit" spellcheck="false">${esc(code)}</textarea><div class="editor-actions"><button class="btn btn-primary save-file" data-fi="${i}">${saveLabel}</button><button class="btn btn-ghost cancel-edit">Cancel</button></div></div>`:""}
   </details>`;
 }
 
 function turnHtml(t,idx,isLast){
   const d=t.result||{};
-  const editable=isLast&&d.engine==="web"&&!!t._root;
-  const files=(d.files||[]).map((f,i)=>fileBlock(f,i,editable)).join("");
+  const editable=isLast&&(d.engine==="web"||d.engine==="unity")&&!!t._root;
+  const files=(d.files||[]).map((f,i)=>fileBlock(f,i,editable,d.engine)).join("");
   const engineName=ENGINES[d.engine]||"";
   return `
   <div class="turn">
@@ -509,15 +510,15 @@ async function onSave(data){
 
 async function onSaveFile(t,i,det){
   if(!t||!t.result||!t.result.files[i]){toast("Nothing to save");return;}
-  const f=t.result.files[i], rel=f.path||f.name;
+  const f=t.result.files[i];
   const content=det.querySelector(".code-edit").value;
-  const r=await window.api.saveFile({root:t._root,rel,content});
+  const r=await window.api.saveFile({root:t._root,engine:t.result.engine,file:{path:f.path,name:f.name,kind:f.kind},content});
   if(!r||!r.ok){toast((r&&r.error)||"Save failed");return;}
   f.content=content; det.querySelector(".code").textContent=content;
   det.querySelector(".code-editor").classList.add("hidden");
   det.querySelector(".code").classList.remove("hidden");
-  toast("Saved ✓");
-  if(t.result.engine==="web"&&t._openTarget){ window.api.previewGame(t._openTarget); setStatus($("#gen-status"),"Saved & re-launched preview ✓",false); }
+  if(t.result.engine==="web"&&t._openTarget){ window.api.previewGame(t._openTarget); setStatus($("#gen-status"),"Saved & re-launched preview ✓",false); toast("Saved ✓"); }
+  else { toast("Saved ✓ — Unity recompiles when you focus it"); setStatus($("#gen-status"),"Saved to the Unity project ✓",false); }
 }
 
 async function onCheckFix(t){

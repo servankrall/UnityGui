@@ -34,6 +34,24 @@ function writeProject(engine, baseDir, data, opts = {}) {
   return writeUnityProject(baseDir, data, opts);
 }
 
+// Where (project-relative) a generated file `f` is written, per engine. This is
+// the single source of truth shared by the writers and the inline-editor save,
+// so an edit lands on the exact file the game runs. Returns null if not editable.
+function diskRelFor(engine, f) {
+  if (!f) return null;
+  if (engine === "web") {
+    let rel = String(f.path || f.name || "index.html").replace(/\\/g, "/").replace(/^\/+/, "");
+    if (!/\.[a-z0-9]+$/i.test(rel)) rel += ".html";
+    return rel;
+  }
+  if (engine === "unity") {
+    const base = path.basename(String(f.path || f.name || "").replace(/\\/g, "/"));
+    const fileName = base.endsWith(".cs") ? base : (sanitize(f.name || "Script") + ".cs");
+    return "Assets/UnityGUI/Generated/" + fileName;
+  }
+  return null; // roblox runs from the .rbxlx — editing raw scripts isn't wired
+}
+
 function writeWebProject(baseDir, data, opts = {}) {
   const projName = sanitize(data.game_name);
   const root = path.join(baseDir, "Web-" + projName);
@@ -47,8 +65,7 @@ function writeWebProject(baseDir, data, opts = {}) {
   }
   for (const f of data.files || []) {
     if (!f || f.content == null) continue;
-    let rel = String(f.path || f.name || "index.html").replace(/\\/g, "/").replace(/^\/+/, "");
-    if (!/\.[a-z0-9]+$/i.test(rel)) rel += ".html";
+    const rel = diskRelFor("web", f);
     const target = path.resolve(path.join(root, rel));
     if (!target.startsWith(rootResolved)) continue; // path-traversal guard
     fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -80,10 +97,9 @@ function writeUnityProject(baseDir, data, opts = {}) {
   let written = 0;
   for (const f of data.files || []) {
     if (!f || f.content == null) continue;
-    const rel = String(f.path || f.name || "").replace(/\\/g, "/");
-    const fileName = path.basename(rel).endsWith(".cs") ? path.basename(rel) : (sanitize(f.name || "Script") + ".cs");
-    const target = path.resolve(path.join(genDir, fileName));
+    const target = path.resolve(path.join(root, diskRelFor("unity", f)));
     if (!target.startsWith(assetsRoot)) continue; // path-traversal guard
+    fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, f.content, "utf8");
     written++;
   }
@@ -214,6 +230,6 @@ function writeStandaloneHtml(projectRoot) {
 }
 
 module.exports = {
-  sanitize, safeJoin, assetList, writeProject, writeUnityProject, writeRobloxPlace, writeWebProject,
+  sanitize, safeJoin, assetList, diskRelFor, writeProject, writeUnityProject, writeRobloxPlace, writeWebProject,
   buildRbxlx, cdata, xmlEsc, inlineHtmlAssets, writeStandaloneHtml, mimeForExt,
 };

@@ -373,10 +373,12 @@ ipcMain.handle("project:zipDir", (_e, dir) => {
   catch (e) { return { ok: false, error: e.message }; }
 });
 // Save an edited file back into a generated project (inline code editor).
-ipcMain.handle("file:save", (_e, { root, rel, content }) => {
+ipcMain.handle("file:save", (_e, { root, rel, engine, file, content }) => {
   try {
-    if (!root || !rel) return { ok: false, error: "Missing path." };
-    const target = writers.safeJoin(root, rel);
+    if (!root) return { ok: false, error: "Missing project path." };
+    const relPath = rel || (engine && file ? writers.diskRelFor(engine, file) : null);
+    if (!relPath) return { ok: false, error: "This file can't be edited in-app for this engine." };
+    const target = writers.safeJoin(root, relPath);
     if (!target) return { ok: false, error: "Path is outside the project." };
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, String(content == null ? "" : content), "utf8");

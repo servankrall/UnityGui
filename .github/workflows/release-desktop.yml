@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.14)"
+        description: "Release tag to publish (e.g. v1.0.15)"
         required: true
-        default: "v1.0.14"
+        default: "v1.0.15"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -61,7 +61,7 @@ jobs:
             - **Opens straight in Unity** — the app launches the Unity Editor on the generated project (no Hub "Add" step)
             - **🎨 Asset pack** — attach photos or generate **multiple** free AI images (no key), name each (player/enemy/background); each is embedded as a real asset (Web sprite / Unity texture)
             - **🔎 Search & ⭐ favorite chats** (+ keyboard shortcuts) · **📄 Single-file `.html`** for Web (itch.io-ready) · **⚙️ Settings** to manage keys + your Unity.exe path
-            - **In-app code editor** — for Web games, edit the code and **Save & re-run** the preview instantly
+            - **In-app code editor** — edit generated code: **Web** Save & re-runs the preview; **Unity** writes back to the project
             - **🔧 Auto QA** — for Web games, catch runtime/console errors and let the AI **auto-fix** them in one click
             - **Web games play instantly** in-app with **▶ Play preview** — no engine, no install (procedural art + Web Audio sound)
             - **📁 My projects** gallery — re-open / preview / zip every game, with auto-captured thumbnails for Web
