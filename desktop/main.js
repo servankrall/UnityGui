@@ -48,6 +48,41 @@ function upsertConvo(convo) {
   saveConvos(list);
 }
 
+// ---- Web thumbnail capture (best-effort, never throws) ---------------------
+// Renders a generated Web game off-screen and grabs a frame as a small PNG so
+// the library and chat can show a visual gallery. Failure is non-fatal.
+function captureWebThumb(indexPath, outPng, timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    let done = false, win = null;
+    const finish = (val) => { if (done) return; done = true; try { if (win && !win.isDestroyed()) win.destroy(); } catch {} resolve(val); };
+    try {
+      if (!indexPath || !fs.existsSync(indexPath)) return finish(null);
+      win = new BrowserWindow({
+        show: false, width: 480, height: 360, frame: false,
+        webPreferences: { offscreen: true, nodeIntegration: false, contextIsolation: true, sandbox: true },
+      });
+      win.webContents.once("did-fail-load", () => finish(null));
+      win.webContents.once("did-finish-load", () => {
+        setTimeout(async () => {
+          try {
+            const img = await win.webContents.capturePage();
+            const png = img.toPNG();
+            if (png && png.length) {
+              try { if (outPng) fs.writeFileSync(outPng, png); } catch {}
+              finish("data:image/png;base64," + png.toString("base64"));
+            } else finish(null);
+          } catch { finish(null); }
+        }, 1300); // let a frame render (game loop)
+      });
+      win.loadFile(indexPath);
+      setTimeout(() => finish(null), timeoutMs);
+    } catch { finish(null); }
+  });
+}
+function thumbToDataUrl(pngPath) {
+  try { const b = fs.readFileSync(pngPath); return "data:image/png;base64," + b.toString("base64"); } catch { return null; }
+}
+
 // ---- Window ----------------------------------------------------------------
 function createWindow() {
   const win = new BrowserWindow({
@@ -66,7 +101,7 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
 
 // ---- IPC: config -----------------------------------------------------------
-ipcMain.handle("providers:get", () => ({ providers: PROVIDERS, engines: ENGINES, genres: prompts.GENRES }));
+ipcMain.handle("providers:get", () => ({ providers: PROVIDERS, engines: ENGINES, genres: prompts.GENRES, modifiers: prompts.MODIFIERS }));
 ipcMain.handle("config:get", () => {
   const c = loadConfig();
   return {
@@ -174,6 +209,10 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate }) =>
       try {
         saved = writers.writeProject(engine, DEFAULT_OUT(), data);
         shell.openPath(saved.openTarget);
+        // Web games: grab a thumbnail for the chat + library gallery (best-effort).
+        if (engine === "web" && saved.root) {
+          try { const t = await captureWebThumb(saved.openTarget, path.join(saved.root, "thumb.png")); if (t) saved.thumb = t; } catch {}
+        }
       } catch (e) { saved = { error: e.message }; }
     }
     return { ok: true, data, conversationId: convo.id, saved, usedProvider, usedModel };
@@ -227,14 +266,16 @@ ipcMain.handle("projects:list", () => {
     const full = path.join(base, name);
     let st; try { st = fs.statSync(full); } catch { continue; }
     if (!st.isDirectory()) continue;
-    let engine = "unity", openTarget = full;
+    let engine = "unity", openTarget = full, thumb = null;
     if (name.startsWith("Roblox-")) {
       engine = "roblox";
       try { const f = fs.readdirSync(full).find(x => x.endsWith(".rbxlx")); if (f) openTarget = path.join(full, f); } catch {}
     } else if (name.startsWith("Web-")) {
       engine = "web"; openTarget = path.join(full, "index.html");
+      const tp = path.join(full, "thumb.png");
+      if (fs.existsSync(tp)) thumb = thumbToDataUrl(tp);
     }
-    out.push({ name, path: full, engine, openTarget, mtime: st.mtimeMs });
+    out.push({ name, path: full, engine, openTarget, mtime: st.mtimeMs, thumb });
   }
   out.sort((a, b) => b.mtime - a.mtime);
   return out;

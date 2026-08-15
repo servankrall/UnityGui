@@ -64,6 +64,19 @@ function genresFor(engine) {
   return GENRES[engine] || GENRES.unity;
 }
 
+// One-tap prompt "spice" — quick modifiers appended to the prompt to enrich a game.
+const MODIFIERS = [
+  { id: "harder", icon: "🔥", label: "Harder", text: "Make it more challenging — faster pace and smarter/tougher enemies." },
+  { id: "levels", icon: "🗺️", label: "Levels", text: "Add multiple levels of increasing difficulty." },
+  { id: "powerups", icon: "🍄", label: "Power-ups", text: "Add collectible power-ups that change gameplay." },
+  { id: "juice", icon: "🧃", label: "More juice", text: "Add game feel: tweening, squash-and-stretch, and satisfying feedback." },
+  { id: "particles", icon: "✨", label: "Particles", text: "Add particle effects and a little screen shake for impact." },
+  { id: "neon", icon: "🌈", label: "Neon", text: "Use a vibrant neon / glow visual style." },
+  { id: "retro", icon: "🕹️", label: "Retro", text: "Give it a retro 8-bit pixel look with chiptune-style beeps." },
+  { id: "sfx", icon: "🔊", label: "More SFX", text: "Add more distinct sound effects for every action." },
+  { id: "highscore", icon: "🏆", label: "High score", text: "Add a persistent high-score and a combo/multiplier system." },
+];
+
 function buildSystemPrompt(engine, style) {
   if (engine === "web") {
     return `You are an expert HTML5 game developer. From the user's description you generate a COMPLETE, PLAYABLE browser game as ONE self-contained HTML file that runs by simply opening it — no server, no build, no external files or CDNs.
@@ -136,7 +149,7 @@ function buildEnhancePrompt(engine, idea) {
 }
 
 module.exports = {
-  styleLine, GENRES, genresFor,
+  styleLine, GENRES, genresFor, MODIFIERS,
   buildSystemPrompt, buildRefinePrompt,
   ENHANCE_SYSTEM, buildEnhancePrompt,
 };

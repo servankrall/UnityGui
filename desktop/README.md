@@ -29,8 +29,12 @@ stop you:
 - **Web games play instantly** — the Web engine writes ONE self-contained
   `index.html` (canvas + Web Audio, all procedural art & sound). Hit **▶ Play
   preview** to play it right inside the app — **no engine, no install, nothing**.
-- **📁 My projects** — a library of every game you've generated; Play/Open,
-  reveal the folder, or export a `.zip` — right from the sidebar.
+- **📁 My projects gallery** — a library of every game you've generated, with
+  **auto-captured thumbnails** for Web games; Play/Open, reveal the folder, or
+  export a `.zip` — right from the sidebar.
+- **One-tap prompt “spice”** — quick modifier chips (Harder, Levels, Power-ups,
+  Particles, Neon, Retro, More SFX, High score…) that enrich your prompt before
+  generating.
 - **Share as `.zip`** — export the whole generated project as a single shareable
   zip (opens the folder so you can send it).
 - **Chats** — every game is a conversation. Keep chatting to **refine** it
