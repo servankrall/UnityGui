@@ -33,6 +33,14 @@ stop you:
 
 ### What's new
 
+- **Opens straight in Unity** — no more “here are some files, now import them
+  yourself.” When a Unity game is generated the app **launches the Unity Editor
+  on the project directly** (it auto-finds your Unity Hub install; if it can’t,
+  click **▶ Open in Unity** once to point it at your `Unity.exe`). You just press Play.
+- **📎 Attach a reference image** — add a photo/screenshot and the AI (free
+  **Gemini** vision) designs the game to match its subject, colours and style.
+  For Web games the image is even saved next to the game so it can be used as a
+  real sprite.
 - **Three engines** — generate for **Unity (C#)**, **Roblox Studio (Luau)**, or
   **Web (HTML5/JS)** from the same window; pick the engine per chat.
 - **Web games play instantly** — the Web engine writes ONE self-contained

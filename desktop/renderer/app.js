@@ -6,6 +6,7 @@ let conversationId = null;   // null = new chat
 let currentEngine = "unity";
 let currentTurns = [];
 let activeProvider = "gemini";
+let attachedImage = null;    // { name, mime, base64, dataUrl } or null
 
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
 function setStatus(el,m,err,busy){el.innerHTML=(busy?'<span class="spinner"></span>':"")+(m||"");el.classList.toggle("err",!!err);}
@@ -84,6 +85,8 @@ async function init(){
   $("#library-close").addEventListener("click",()=>$("#library-modal").classList.add("hidden"));
   $("#library-modal").addEventListener("click",e=>{if(e.target.id==="library-modal")$("#library-modal").classList.add("hidden");});
   $("#enhance-btn").addEventListener("click",onEnhance);
+  $("#attach-btn").addEventListener("click",onAttach);
+  $("#attach-clear").addEventListener("click",clearImage);
   $("#generate-btn").addEventListener("click",onGenerate);
   $("#prompt").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")onGenerate();});
 
@@ -227,7 +230,7 @@ function renderTurns(){
   // wire per-turn actions
   const last=currentTurns[currentTurns.length-1];
   const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn"), zipBtn=box.querySelector("#zip-btn"), previewBtn=box.querySelector("#preview-btn");
-  if(openBtn) openBtn.addEventListener("click",()=>{ if(last._openTarget) window.api.openPath(last._openTarget); });
+  if(openBtn) openBtn.addEventListener("click",()=>openInEngine(last));
   if(previewBtn) previewBtn.addEventListener("click",async()=>{
     if(!last._openTarget){toast("Generate first");return;}
     const r=await window.api.previewGame(last._openTarget);
@@ -273,6 +276,45 @@ function turnHtml(t,idx,isLast){
   </div>`;
 }
 
+// ---- Reference image -------------------------------------------------------
+async function onAttach(){
+  const img=await window.api.pickImage();
+  if(!img)return;
+  if(img.error){toast(img.error);return;}
+  attachedImage=img;
+  $("#attach-thumb").src=img.dataUrl; $("#attach-name").textContent=img.name||"image";
+  $("#attach-chip").classList.remove("hidden");
+  toast("Image attached ✓");
+}
+function clearImage(){
+  attachedImage=null;
+  $("#attach-thumb").removeAttribute("src"); $("#attach-name").textContent="";
+  $("#attach-chip").classList.add("hidden");
+}
+
+// ---- Open a finished project in its engine ---------------------------------
+async function openInEngine(t){
+  const eng=t&&t.result&&t.result.engine;
+  if(!t||!t._openTarget){toast("Generate first");return;}
+  if(eng==="unity"){
+    const r=await window.api.openUnity(t._openTarget);
+    if(r&&r.ok){toast("Opening in Unity ✓");return;}
+    if(r&&r.needsUnity){
+      if(confirm("Unity Editor wasn't found automatically.\n\nLocate your Unity.exe now? (one time)")){
+        const pick=await window.api.pickUnityExe();
+        if(pick&&pick.ok){ const r2=await window.api.openUnity(t._openTarget); if(r2&&r2.ok){toast("Opening in Unity ✓");return;} }
+      }
+      window.api.revealPath(t._openTarget); // fallback: show the folder
+      return;
+    }
+    toast((r&&r.error)||"Couldn't open Unity");
+  } else if(eng==="web"){
+    window.api.previewGame(t._openTarget);
+  } else {
+    window.api.openPath(t._openTarget);
+  }
+}
+
 // ---- Enhance / Generate / Regenerate ---------------------------------------
 async function onEnhance(){
   const idea=$("#prompt").value.trim();
@@ -309,7 +351,9 @@ async function runGenerate(payload,busyMsg){
     activeProvider=r.usedProvider; showConnected(true,r.usedProvider);
     switched=" (switched to "+name+")"; toast("Switched to "+name+" ✓");
   }
-  if(r.saved&&r.saved.openTarget){ if(!switched)toast("Generated & opened ✓"); setStatus($("#gen-status"),"Saved & opened: "+r.saved.openTarget+switched,false); }
+  if(r.saved&&r.saved.launched==="unity"){ if(!switched)toast("Opening in Unity ✓"); setStatus($("#gen-status"),"Opening the project in Unity…"+switched,false); }
+  else if(r.saved&&r.saved.needsUnity){ setStatus($("#gen-status"),"Generated. Unity wasn't found — click ▶ Open in Unity to locate it (one time).",true); }
+  else if(r.saved&&r.saved.openTarget){ if(!switched)toast("Generated & opened ✓"); setStatus($("#gen-status"),"Saved & opened: "+r.saved.openTarget+switched,false); }
   else if(r.saved&&r.saved.error){ setStatus($("#gen-status"),"Generated. Auto-open failed: "+r.saved.error,true); }
   else if(!switched){ toast("Generated ✓"); }
   return r;
@@ -318,7 +362,8 @@ async function runGenerate(payload,busyMsg){
 async function onGenerate(){
   const prompt=$("#prompt").value.trim();
   if(!prompt){setStatus($("#gen-status"),"Describe your game (or a change) first.",true);return;}
-  await runGenerate({prompt,conversationId},conversationId?"Refining…":"Generating — this can take a minute…");
+  const r=await runGenerate({prompt,conversationId,image:attachedImage},conversationId?"Refining…":"Generating — this can take a minute…");
+  if(r&&r.ok) clearImage();
 }
 
 async function onRegenerate(){

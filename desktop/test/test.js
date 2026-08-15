@@ -11,6 +11,7 @@ const prompts = require("../lib/prompts");
 const writers = require("../lib/writers");
 const llm = require("../lib/llm");
 const zip = require("../lib/zip");
+const unity = require("../lib/unity");
 
 let passed = 0;
 const tests = [];
@@ -291,6 +292,43 @@ test("generateResilient: when everything fails, error points to Ollama", async (
   await assert.rejects(
     () => llm.generateResilient(cfg, "sys", "hi", true, 20, { retriesPer429: 0, sleep: async () => {} }),
     /Ollama/,
+  );
+});
+
+// ---- Unity locator ---------------------------------------------------------
+test("unity.pickNewest: chooses the newest editor version", () => {
+  assert.strictEqual(unity.pickNewest(["2021.3.10f1", "2022.3.40f1", "2020.3.1f1"]), "2022.3.40f1");
+  assert.strictEqual(unity.pickNewest(["2022.3.9f1", "2022.3.40f1"]), "2022.3.40f1");
+  assert.strictEqual(unity.pickNewest([]), null);
+});
+test("unity.findUnityExe: locates Unity.exe under a Hub editor root (mocked fs)", () => {
+  // Build a fake fs that reports an editor version dir + the exe underneath.
+  const roots = unity.editorRoots();
+  const rel = unity.exeRelParts().join(require("path").sep);
+  const exePath = require("path").join(roots[0], "2022.3.40f1", ...unity.exeRelParts());
+  const fakeFs = {
+    readdirSync: (d) => (d === roots[0] ? ["2022.3.40f1", "readme.txt"] : (() => { throw new Error("nope"); })()),
+    existsSync: (p) => p === exePath,
+  };
+  const found = unity.findUnityExe(fakeFs);
+  assert.ok(found && found.includes("2022.3.40f1") && found.endsWith(rel), "found the newest exe");
+});
+
+// ---- image (vision) passthrough --------------------------------------------
+test("callGemini: sends an attached image as inline_data", async () => {
+  let sentBody = null;
+  global.fetch = async (url, opts) => { sentBody = JSON.parse(opts.body); return mockRes(true, 200, JSON.stringify({ candidates: [{ content: { parts: [{ text: "OK" }] } }] })); };
+  const r = await llm.callGemini("k", "gemini-2.5-flash", "sys", "make a game", true, 100, [{ mime: "image/png", data: "AAAA" }]);
+  assert.strictEqual(r.text, "OK");
+  const parts = sentBody.contents[0].parts;
+  const img = parts.find(p => p.inline_data);
+  assert.ok(img && img.inline_data.data === "AAAA" && img.inline_data.mime_type === "image/png", "image inlined");
+});
+test("generateResilient: image requires Gemini (errors without a Gemini key)", async () => {
+  const cfg = { provider: "groq", model: "llama-3.3-70b-versatile", keys: { groq: "qk" } };
+  await assert.rejects(
+    () => llm.generateResilient(cfg, "sys", "hi", true, 100, { images: [{ mime: "image/png", data: "AAAA" }], retriesPer429: 0, sleep: async () => {} }),
+    /Gemini/,
   );
 });
 
