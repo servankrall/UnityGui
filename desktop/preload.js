@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("api", {
   disconnect: () => ipcRenderer.invoke("config:disconnect"),
   testConnect: (payload) => ipcRenderer.invoke("connect:test", payload),
   ollamaStatus: () => ipcRenderer.invoke("ollama:status"),
+  getSettings: () => ipcRenderer.invoke("settings:get"),
+  setKeys: (payload) => ipcRenderer.invoke("keys:set", payload),
 
   listConvos: () => ipcRenderer.invoke("convos:list"),
   getConvo: (id) => ipcRenderer.invoke("convos:get", id),
@@ -21,6 +23,7 @@ contextBridge.exposeInMainWorld("api", {
   saveProject: (payload) => ipcRenderer.invoke("project:save", payload),
   zipProject: (payload) => ipcRenderer.invoke("project:zip", payload),
   zipDir: (dir) => ipcRenderer.invoke("project:zipDir", dir),
+  standaloneHtml: (root) => ipcRenderer.invoke("web:standalone", root),
   listProjects: () => ipcRenderer.invoke("projects:list"),
   previewGame: (p) => ipcRenderer.invoke("preview:open", p),
   openUnity: (root) => ipcRenderer.invoke("unity:open", root),

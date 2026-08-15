@@ -84,6 +84,10 @@ async function init(){
   $("#library-btn").addEventListener("click",openLibrary);
   $("#library-close").addEventListener("click",()=>$("#library-modal").classList.add("hidden"));
   $("#library-modal").addEventListener("click",e=>{if(e.target.id==="library-modal")$("#library-modal").classList.add("hidden");});
+  $("#settings-btn").addEventListener("click",openSettings);
+  $("#settings-close").addEventListener("click",()=>$("#settings-modal").classList.add("hidden"));
+  $("#settings-modal").addEventListener("click",e=>{if(e.target.id==="settings-modal")$("#settings-modal").classList.add("hidden");});
+  $("#set-unity-btn").addEventListener("click",async()=>{const r=await window.api.pickUnityExe();if(r&&r.ok){toast("Unity path set ✓");openSettings();}});
   $("#enhance-btn").addEventListener("click",onEnhance);
   $("#attach-btn").addEventListener("click",onAttach);
   $("#attach-clear").addEventListener("click",clearImage);
@@ -170,6 +174,43 @@ function startRename(titleEl){
   inp.addEventListener("blur",()=>commit(true));
 }
 
+// ---- Settings (keys + Unity path) ------------------------------------------
+async function refreshConnState(){
+  const cfg=await window.api.getConfig();
+  activeProvider=cfg.provider; showConnected(cfg.connected,cfg.provider);
+  if(cfg.connected){ await refreshConvos(); if(!currentTurns.length) newChat(); }
+}
+async function openSettings(){
+  const s=await window.api.getSettings();
+  $("#settings-modal").classList.remove("hidden");
+  $("#set-unity-path").textContent = s.unityPath || s.unityDetected || "Not found — click Locate";
+  $("#settings-providers").innerHTML=s.providers.map(p=>`
+    <div class="set-row set-prov">
+      <div class="set-main">
+        <div class="set-name">${esc(p.label)} ${p.active?'<span class="pill">active</span>':''}</div>
+        <div class="convo-meta">${p.needsKey?(p.keyCount+" key"+(p.keyCount===1?"":"s")+" saved"):"no key needed (local)"}</div>
+        ${p.needsKey?`<textarea class="set-keys" data-id="${p.id}" rows="2" placeholder="paste key(s), one per line — replaces saved keys"></textarea>`:""}
+      </div>
+      <div class="set-actions">
+        ${p.needsKey?`<button class="btn btn-ghost set-save" data-id="${p.id}">Save keys</button>`:""}
+        ${!p.active?`<button class="btn btn-ghost set-active" data-id="${p.id}">Use</button>`:""}
+        ${p.keyUrl?`<button class="link set-getkey" data-url="${esc(p.keyUrl)}">Get key →</button>`:""}
+      </div>
+    </div>`).join("");
+  const box=$("#settings-providers");
+  box.querySelectorAll(".set-save").forEach(b=>b.addEventListener("click",async()=>{
+    const ta=box.querySelector('.set-keys[data-id="'+b.dataset.id+'"]');
+    const r=await window.api.setKeys({provider:b.dataset.id,keys:ta.value});
+    if(r&&r.ok){toast("Saved "+r.keyCount+" key(s) ✓");await refreshConnState();openSettings();}
+    else toast((r&&r.error)||"Couldn't save");
+  }));
+  box.querySelectorAll(".set-active").forEach(b=>b.addEventListener("click",async()=>{
+    await window.api.setKeys({provider:b.dataset.id,makeActive:true});
+    toast("Active provider changed ✓");await refreshConnState();openSettings();
+  }));
+  box.querySelectorAll(".set-getkey").forEach(b=>b.addEventListener("click",()=>window.api.openExternal(b.dataset.url)));
+}
+
 // ---- Project library -------------------------------------------------------
 async function openLibrary(){
   const modal=$("#library-modal"), listEl=$("#library-list");
@@ -229,8 +270,9 @@ function renderTurns(){
   box.innerHTML=currentTurns.map((t,i)=>turnHtml(t,i,i===currentTurns.length-1)).join("");
   // wire per-turn actions
   const last=currentTurns[currentTurns.length-1];
-  const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn"), zipBtn=box.querySelector("#zip-btn"), previewBtn=box.querySelector("#preview-btn");
+  const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn"), zipBtn=box.querySelector("#zip-btn"), previewBtn=box.querySelector("#preview-btn"), htmlBtn=box.querySelector("#html-btn");
   if(openBtn) openBtn.addEventListener("click",()=>openInEngine(last));
+  if(htmlBtn) htmlBtn.addEventListener("click",()=>onStandalone(last));
   if(previewBtn) previewBtn.addEventListener("click",async()=>{
     if(!last._openTarget){toast("Generate first");return;}
     const r=await window.api.previewGame(last._openTarget);
@@ -270,6 +312,7 @@ function turnHtml(t,idx,isLast){
         ${d.engine==="web"?`<button class="btn btn-ember" id="preview-btn">▶ Play preview</button>`:`<button class="btn btn-ember" id="open-btn">▶ Open in ${esc((engineName||"engine").split(" ")[0])}</button>`}
         <button class="btn btn-ghost" id="save-btn">💾 Save to…</button>
         <button class="btn btn-ghost" id="zip-btn" title="Export the whole project as a shareable .zip">📦 Share .zip</button>
+        ${d.engine==="web"?`<button class="btn btn-ghost" id="html-btn" title="Export one self-contained .html (itch.io-ready)">📄 Single .html</button>`:""}
         <button class="btn btn-ghost" id="regen-btn" title="Regenerate this from the same prompt">🔁 Regenerate</button>
       </div>`:""}
     </div>
@@ -339,6 +382,7 @@ async function runGenerate(payload,busyMsg){
   const c=await window.api.getConvo(conversationId); currentTurns=c?c.turns:currentTurns;
   const last=currentTurns[currentTurns.length-1];
   if(last&&r.saved&&r.saved.openTarget){last._openTarget=r.saved.openTarget;}
+  if(last&&r.saved&&r.saved.root){last._root=r.saved.root;}
   if(last&&r.saved&&r.saved.thumb){last._thumb=r.saved.thumb;}
   $("#engine").disabled=true;
   $("#prompt").value=""; $("#prompt").placeholder="Ask for a change… (e.g. make it faster, add enemies)";
@@ -378,6 +422,16 @@ async function onSave(data){
   if(!r.ok){setStatus($("#gen-status"),r.error||"Could not save.",true);return;}
   setStatus($("#gen-status"),"Saved: "+r.path,false);
   if(confirm("Saved to:\n"+r.path+"\n\nOpen it now?")) window.api.openPath(r.openTarget||r.path);
+}
+
+async function onStandalone(t){
+  const root=t&&t._root; if(!root){toast("Generate first");return;}
+  setStatus($("#gen-status"),"Building single .html…",false,true);
+  const r=await window.api.standaloneHtml(root);
+  if(!r.ok){setStatus($("#gen-status"),r.error||"Couldn't build the file.",true);return;}
+  setStatus($("#gen-status"),"Single-file game saved: "+r.path,false);
+  toast("Single .html ready ✓ (share it anywhere / upload to itch.io)");
+  window.api.revealPath(r.path);
 }
 
 async function onShareZip(data){

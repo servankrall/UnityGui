@@ -149,6 +149,31 @@ ipcMain.handle("config:save", (_e, patch) => {
 });
 ipcMain.handle("config:disconnect", () => { const c = loadConfig(); if (c.keys) c.keys[c.provider] = ""; return saveConfig(c); });
 
+// ---- Settings: providers + keys + Unity path -------------------------------
+ipcMain.handle("settings:get", () => {
+  const c = loadConfig();
+  const providers = Object.entries(PROVIDERS).map(([id, p]) => ({
+    id, label: p.label, needsKey: p.needsKey, keyUrl: p.keyUrl, keyHint: p.keyHint,
+    keyCount: keyList(c, id).length, active: id === c.provider,
+  }));
+  return {
+    providers, activeProvider: c.provider,
+    unityPath: c.unityPath || "", unityDetected: resolveUnityExe() || null,
+    style: c.style, maxTokens: c.maxTokens || 20000, autoOpen: c.autoOpen,
+  };
+});
+ipcMain.handle("keys:set", (_e, { provider, keys, makeActive }) => {
+  if (!PROVIDERS[provider]) return { ok: false, error: "Unknown provider." };
+  const c = loadConfig(); c.keys = c.keys || {};
+  if (keys !== undefined && keys !== null) { // only touch keys when provided (not on a bare "make active")
+    const arr = (Array.isArray(keys) ? keys : String(keys).split(/[\n,]+/)).map(s => String(s || "").trim()).filter(Boolean);
+    c.keys[provider] = [...new Set(arr)];
+  }
+  if (makeActive) c.provider = provider;
+  saveConfig(c);
+  return { ok: true, keyCount: keyList(c, provider).length };
+});
+
 ipcMain.handle("ollama:status", () => ollamaStatus());
 ipcMain.handle("connect:test", async (_e, { provider, apiKey, model }) => {
   const key = Array.isArray(apiKey) ? apiKey.find(Boolean) : apiKey;
@@ -203,6 +228,7 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
     if (images) {
       userMsg += "\n\nA reference image is attached — match its subject, colours and style in the game.";
       if (engine === "web") userMsg += " The same image is also saved next to the game at \"assets/reference.png\"; you MAY load it as a sprite via new Image() / <img> using that relative path.";
+      else if (engine === "unity") userMsg += " The same image is available at runtime via Resources.Load<Texture2D>(\"reference\"); you MAY use it as a sprite or material texture.";
     }
     const badFiles = (d) => !d || !Array.isArray(d.files) || d.files.length === 0;
 
@@ -265,17 +291,14 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
     let saved = null;
     if (c.autoOpen) {
       try {
-        saved = writers.writeProject(engine, DEFAULT_OUT(), data);
+        const imgOpt = images ? { image: { base64: images[0].data } } : {};
+        saved = writers.writeProject(engine, DEFAULT_OUT(), data, imgOpt);
         if (engine === "unity") {
           // Open the project straight in the Unity Editor — no Hub "Add" step.
           const u = launchUnity(saved.root);
           if (u.ok) { saved.launched = "unity"; saved.unityExe = u.exe; }
           else { shell.openPath(saved.root); saved.launched = "folder"; saved.needsUnity = !!u.needsUnity; }
         } else {
-          // Web: drop the reference image into the project so a sprite path resolves.
-          if (engine === "web" && images && saved.root) {
-            try { fs.mkdirSync(path.join(saved.root, "assets"), { recursive: true }); fs.writeFileSync(path.join(saved.root, "assets", "reference.png"), Buffer.from(images[0].data, "base64")); } catch {}
-          }
           shell.openPath(saved.openTarget);
           // Web games: grab a thumbnail for the chat + library gallery (best-effort).
           if (engine === "web" && saved.root) {
@@ -323,6 +346,14 @@ ipcMain.handle("project:zip", (_e, { engine, data, dir }) => {
 ipcMain.handle("project:zipDir", (_e, dir) => {
   try { return { ok: true, zipPath: zip.zipDir(dir) }; }
   catch (e) { return { ok: false, error: e.message }; }
+});
+// Web: build a single self-contained .html (assets inlined) for easy sharing / itch.io.
+ipcMain.handle("web:standalone", (_e, projectRoot) => {
+  try {
+    const out = writers.writeStandaloneHtml(projectRoot);
+    if (!out) return { ok: false, error: "No index.html found for this game." };
+    return { ok: true, path: out };
+  } catch (e) { return { ok: false, error: e.message }; }
 });
 ipcMain.handle("shell:open", (_e, p) => shell.openPath(p));
 ipcMain.handle("shell:reveal", (_e, p) => shell.showItemInFolder(p));
