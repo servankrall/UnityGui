@@ -13,6 +13,8 @@ const llm = require("../lib/llm");
 const zip = require("../lib/zip");
 const unity = require("../lib/unity");
 const art = require("../lib/art");
+const staticServer = require("../lib/server");
+const http = require("http");
 
 let passed = 0;
 const tests = [];
@@ -424,6 +426,27 @@ test("generateResilient: image requires Gemini (errors without a Gemini key)", a
   );
 });
 
+// ---- Play on phone (static server) -----------------------------------------
+test("server.contentType + lanIp: sane mappings", () => {
+  assert.strictEqual(staticServer.contentType(".html"), "text/html; charset=utf-8");
+  assert.strictEqual(staticServer.contentType(".png"), "image/png");
+  assert.strictEqual(staticServer.contentType(".xyz"), "application/octet-stream");
+  // lanIp falls back to loopback when no external IPv4 is present
+  assert.strictEqual(staticServer.lanIp({ lo: [{ family: "IPv4", internal: true, address: "127.0.0.1" }] }), "127.0.0.1");
+  assert.strictEqual(staticServer.lanIp({ en0: [{ family: "IPv4", internal: false, address: "192.168.1.5" }] }), "192.168.1.5");
+});
+test("server.startStaticServer: serves index.html + blocks traversal", async () => {
+  const dir = mkTmp();
+  fs.writeFileSync(path.join(dir, "index.html"), "<h1>PHONE GAME</h1>");
+  const { server, port } = await staticServer.startStaticServer(dir, { host: "127.0.0.1" });
+  try {
+    const body = await httpGet(`http://127.0.0.1:${port}/`);
+    assert.ok(body.includes("PHONE GAME"), "root serves index.html");
+    const status = await httpStatus(`http://127.0.0.1:${port}/../../etc/passwd`);
+    assert.ok(status === 403 || status === 404, "traversal is refused");
+  } finally { server.close(); }
+});
+
 // ---- free AI art (Pollinations) --------------------------------------------
 test("art.artUrl: encodes the prompt and clamps size", () => {
   const u = art.artUrl("a cute pixel dragon", { width: 999999, height: 10, seed: 7 });
@@ -476,6 +499,8 @@ test("zip: zipDir packs a real project directory", () => {
 
 // ---- helpers ---------------------------------------------------------------
 function mkTmp() { return fs.mkdtempSync(path.join(os.tmpdir(), "unitygui-test-")); }
+function httpGet(url) { return new Promise((res, rej) => { http.get(url, r => { let d = ""; r.on("data", c => d += c); r.on("end", () => res(d)); }).on("error", rej); }); }
+function httpStatus(url) { return new Promise((res, rej) => { http.get(url, r => { r.resume(); res(r.statusCode); }).on("error", rej); }); }
 function mockRes(ok, status, body) { return { ok, status, text: async () => body }; }
 function xmlWellFormed(xml) {
   const noCdata = xml.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, "");

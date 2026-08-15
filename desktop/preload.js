@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld("api", {
   zipDir: (dir) => ipcRenderer.invoke("project:zipDir", dir),
   saveFile: (payload) => ipcRenderer.invoke("file:save", payload),
   standaloneHtml: (root) => ipcRenderer.invoke("web:standalone", root),
+  servePhone: (root) => ipcRenderer.invoke("phone:serve", root),
+  stopPhone: () => ipcRenderer.invoke("phone:stop"),
   listProjects: () => ipcRenderer.invoke("projects:list"),
   previewGame: (p) => ipcRenderer.invoke("preview:open", p),
   checkWeb: (p) => ipcRenderer.invoke("web:check", p),

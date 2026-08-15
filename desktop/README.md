@@ -48,6 +48,9 @@ stop you:
   **Ctrl+N** new chat · **Ctrl+K** search · **Ctrl+Enter** generate · **Esc** close.
 - **🔧 Auto QA (Check & fix)** — for Web games, the app runs the game headless,
   captures runtime/console errors, and the AI **auto-fixes them** in one click.
+- **📱 Play on phone** — for Web games, start a tiny local server and get a LAN
+  URL (copied to your clipboard) so you can play the game on your phone over the
+  same Wi‑Fi.
 - **📄 Single-file `.html`** — export a Web game as one self-contained HTML file
   (all assets inlined) that runs anywhere and is **itch.io-ready**.
 - **⚙️ Settings** — manage your free API keys per provider (paste several to
