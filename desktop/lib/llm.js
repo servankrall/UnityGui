@@ -279,9 +279,57 @@ function parseResult(text) {
   return JSON.parse(dropTrailingCommas(closeTruncated(s)));
 }
 
+// A generated file object in the shape each engine's writer expects.
+function fileObjFor(engine, key, i, content) {
+  content = String(content);
+  if (engine === "roblox") {
+    const k = String(key || "");
+    const kind = /local|client/i.test(k) ? "local" : /module/i.test(k) ? "module" : "server";
+    return { name: (k && /[a-z]/i.test(k)) ? k.replace(/\.[^.]+$/, "").replace(/[^\w]+/g, "") : ("Script" + i), kind, content };
+  }
+  if (engine === "web") {
+    const p = (typeof key === "string" && /[.\/]/.test(key)) ? key : (i === 0 ? "index.html" : "file" + i + ".html");
+    return { path: p, content };
+  }
+  const p = (typeof key === "string" && /\.cs$/i.test(key)) ? key : "Assets/UnityGUI/Generated/Generated" + (i || "") + ".cs";
+  return { path: p, content };
+}
+function firstCodeLike(d, engine) {
+  const keys = ["html", "index_html", "indexhtml", "code", "content", "source", "game", "script", "index"];
+  for (const k of Object.keys(d)) {
+    const v = d[k];
+    if (typeof v !== "string" || v.length < 24) continue;
+    if (keys.includes(k.toLowerCase()) && (engine !== "web" || /<|function|const|let|var|=>|canvas/i.test(v))) return v;
+  }
+  if (engine === "web") for (const k of Object.keys(d)) { const v = d[k]; if (typeof v === "string" && /<(!doctype|html|canvas|script|div|body|style)/i.test(v)) return v; }
+  return null;
+}
+// Some (weaker) models return the right CONTENT in the WRONG shape — no top-level
+// `files` array. Salvage the common variants so the game still gets written
+// instead of failing with "no usable files". Returns a well-shaped result or null.
+function coerceFiles(d, engine) {
+  if (typeof d === "string") return d.trim().length >= 10 ? { game_name: "Game", summary: "", setup_notes: "", files: [fileObjFor(engine, null, 0, d)] } : null;
+  if (!d || typeof d !== "object" || Array.isArray(d)) return null;
+  if (Array.isArray(d.files) && d.files.some(f => f && typeof f === "object" && f.content != null)) return d; // already valid
+  const meta = { game_name: d.game_name || d.name || d.title || "Game", summary: d.summary || d.description || "", setup_notes: d.setup_notes || d.instructions || d.how_to_play || "" };
+  if (Array.isArray(d.files) && d.files.length && typeof d.files[0] === "string") {
+    const arr = d.files.map((c, i) => fileObjFor(engine, null, i, c)).filter(f => f.content);
+    if (arr.length) return { ...meta, files: arr };
+  }
+  if (d.files && typeof d.files === "object" && !Array.isArray(d.files)) {
+    const arr = Object.entries(d.files).map(([k, v], i) => fileObjFor(engine, k, i, typeof v === "string" ? v : (v && (v.content || v.code || v.source)) || "")).filter(f => f.content);
+    if (arr.length) return { ...meta, files: arr };
+  }
+  const single = firstCodeLike(d, engine);
+  if (single) return { ...meta, files: [fileObjFor(engine, null, 0, single)] };
+  const codeKeys = Object.keys(d).filter(k => typeof d[k] === "string" && d[k].length > 24 && (/[\/.]/.test(k) || /^(server|local|module|client)/i.test(k)));
+  if (codeKeys.length) return { ...meta, files: codeKeys.map((k, i) => fileObjFor(engine, k, i, d[k])) };
+  return null;
+}
+
 module.exports = {
   httpJson, apiError, isModelUnavailable, isRateLimited, isTruncated,
   callGemini, callGroq, callOllama, callOne, callLLM, ollamaCandidateModels,
   keyList, buildCandidates, generateResilient, ollamaStatus,
-  stripFences, parseResult, extractBalanced, closeTruncated,
+  stripFences, parseResult, extractBalanced, closeTruncated, coerceFiles,
 };

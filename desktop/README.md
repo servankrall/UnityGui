@@ -44,6 +44,12 @@ stop you:
   *`deepseek-coder-v2:16b` not found*). It now asks Ollama which models are
   **actually installed** and uses one of those (preferring the one you picked), or
   shows a clear **"run `ollama pull qwen2.5-coder`"** message if none are.
+- **🧯 Far fewer "the model returned no usable files" errors** — weaker/local
+  models often return the game code in the **wrong JSON shape** (an object map, an
+  array of strings, path-keyed at the top level, or raw HTML). The app now
+  **salvages** all of those into a real project, **retries once** with a firmer
+  format reminder, and only if it still can't will it tell you — with a useful tip
+  (try a stronger model, use the **Web** engine, or add a free Gemini/Groq key).
 - **♾️ Ollama shown as truly unlimited** — when Ollama is the active provider the
   header reads **“Connected · Ollama · ♾️ Unlimited”**. The desktop app has **no
   credits and no limits** — Ollama runs on your own PC, offline, free.

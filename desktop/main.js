@@ -11,7 +11,7 @@ const { spawn } = require("child_process");
 
 const { PROVIDERS, ENGINES } = require("./lib/providers");
 const prompts = require("./lib/prompts");
-const { callLLM, generateResilient, parseResult, keyList, ollamaStatus, isTruncated } = require("./lib/llm");
+const { callLLM, generateResilient, parseResult, keyList, ollamaStatus, isTruncated, coerceFiles } = require("./lib/llm");
 const writers = require("./lib/writers");
 const zip = require("./lib/zip");
 const unity = require("./lib/unity");
@@ -333,10 +333,29 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
       if (!last || last.content == null || String(last.content).length < 24) data.files.pop();
     }
 
+    // Wrong-shape salvage: weaker models often put the code in the wrong place
+    // (no top-level `files` array). Recover the common variants before erroring.
+    if (badFiles(data) && data) { const cf = coerceFiles(data, engine); if (cf && !badFiles(cf)) data = cf; }
+
+    // Still nothing usable → one firmer retry with an explicit format reminder
+    // (this is what small local models usually need to comply).
     if (badFiles(data)) {
+      try {
+        const strict = userMsg + "\n\nReturn ONLY the JSON object described above — keys game_name, summary, setup_notes, and a non-empty \"files\" array whose items each have the complete code in \"content\". No prose, no explanations, no markdown fences.";
+        const rr = await generateResilient(c, system, strict, true, Math.max(budget, 32000), { images });
+        let d3 = null; try { d3 = parseResult(rr.text); } catch {}
+        if (d3 && badFiles(d3)) { const cf = coerceFiles(d3, engine); if (cf) d3 = cf; }
+        if (d3 && !badFiles(d3)) { r = rr; data = d3; parseErr = null; }
+      } catch {}
+    }
+
+    if (badFiles(data)) {
+      const usedOllama = r && r.provider === "ollama";
       return { ok: false, error: (isTruncated(r.finishReason) || parseErr)
         ? "The game was too big and got cut off before it finished. Try a shorter description, set Length to Max, or switch model/provider."
-        : "The model returned no usable files. Try again or pick another model." };
+        : usedOllama
+          ? "Your local Ollama model couldn't produce a full game in the required format. Try a stronger model (e.g. `ollama pull qwen2.5-coder:7b`, or a 14b/32b), pick the Web engine (it's the simplest), or add a free Gemini/Groq key for generating games."
+          : "The model returned no usable files. Try again, shorten the description, or pick another model/provider." };
     }
 
     const usedProvider = r.provider, usedModel = r.model;
