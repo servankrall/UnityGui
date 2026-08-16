@@ -63,7 +63,8 @@ on it writes the project and opens it in the engine for you. You just press Play
   **answers you in text** (in your language), and it **knows the game it made**.
   No separate tabs. Uses the same free stack — **unlimited with Ollama** (no key,
   no credits). The Ollama *"model not found (404)"* error is fixed too — it uses
-  the models you actually have installed.
+  the models you actually have installed — and *"model returned no usable files"*
+  is much rarer now (the app salvages wrong-shape output and retries).
 - **🧩 Starter templates** — instant, ready-made Web games (Snake, Pong, Flappy)
   created with **no AI and no wait**; then Play, edit the code, or refine in chat.
 - **🎓 Guided tour** — a first-run coach-mark tour spotlights each step (connect →
@@ -88,7 +89,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.21` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.22` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 

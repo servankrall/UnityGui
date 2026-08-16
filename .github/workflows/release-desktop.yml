@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.21)"
+        description: "Release tag to publish (e.g. v1.0.22)"
         required: true
-        default: "v1.0.21"
+        default: "v1.0.22"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -66,6 +66,7 @@ jobs:
             - **📱 Play on phone** — for Web games, get a LAN URL to open and play the game on your phone (same Wi‑Fi)
             - **💬 One thread, chat + games together** — in the SAME conversation the AI both **answers you in text** AND **builds the game files**; switch **✦ Make a game / 💬 Ask AI** anytime — no separate tabs, and it **knows the game it made** (ask “what did you make?” and it tells you)
             - **🛠️ Ollama 404 fixed** — it no longer tries model tags you don’t have (*“model 'deepseek-coder-v2:16b' not found”*). It asks Ollama which models are **actually installed** and uses one of those (or gives a clear “run `ollama pull …`” message)
+            - **🧯 Far fewer *“model returned no usable files”* errors** — weaker models often put the code in the wrong JSON shape; the app now **salvages** those (object/array/path-keyed/raw-HTML variants), **retries once** with a firmer format reminder, and if it still can’t, gives a clear tip (stronger model / Web engine / add a cloud key)
             - **♾️ Ollama is truly unlimited** — the header shows **“♾️ Unlimited”** when Ollama is active: no key, **no credits**, no limits (offline, on your PC)
             - **🧩 Starter templates** — instant ready-made Web games (Snake · Pong · Flappy), no AI / no wait, then edit or refine
             - **🎓 Guided tour** — a first-run coach-mark tour walks you through connect → engine → prompt → generate → play (replay anytime with **🎓 Tour**); friendlier empty screen with one-tap examples

@@ -126,6 +126,29 @@ test("isTruncated: recognises MAX_TOKENS / length finish reasons", () => {
   assert.ok(!llm.isTruncated("stop"));
   assert.ok(!llm.isTruncated(null));
 });
+test("coerceFiles: salvages wrong-shape model output (fixes 'no usable files')", () => {
+  const bad = (d) => !d || !Array.isArray(d.files) || !d.files.length;
+  // files as an object map (web)
+  let r = llm.coerceFiles({ game_name: "X", files: { "index.html": "<!doctype html><canvas></canvas>" } }, "web");
+  assert.ok(!bad(r) && r.files[0].path === "index.html" && /canvas/.test(r.files[0].content));
+  // a single HTML string under a common key (web)
+  r = llm.coerceFiles({ game_name: "X", html: "<!doctype html><html><canvas></canvas></html>" }, "web");
+  assert.ok(!bad(r) && r.files[0].path === "index.html");
+  // top-level path-keyed map, no `files` wrapper (unity)
+  r = llm.coerceFiles({ game_name: "Y", "Assets/UnityGUI/Generated/Boot.cs": "using UnityEngine; public class Boot{}" }, "unity");
+  assert.ok(!bad(r) && /Boot\.cs$/.test(r.files[0].path));
+  // files as an array of raw strings (roblox → gets name+kind)
+  r = llm.coerceFiles({ game_name: "Z", files: ["print(1)", "print(2)"] }, "roblox");
+  assert.ok(!bad(r) && r.files[0].name && r.files[0].kind === "server");
+  // a bare HTML string
+  assert.ok(!bad(llm.coerceFiles("<!doctype html><html><canvas></canvas></html>", "web")));
+  // already-valid output is returned unchanged
+  const good = { game_name: "A", files: [{ path: "index.html", content: "<x>" }] };
+  assert.strictEqual(llm.coerceFiles(good, "web"), good);
+  // genuinely empty → null (so the caller still errors)
+  assert.strictEqual(llm.coerceFiles({ game_name: "A" }, "web"), null);
+  assert.strictEqual(llm.coerceFiles(null, "web"), null);
+});
 test("extractBalanced / closeTruncated behave", () => {
   assert.strictEqual(llm.extractBalanced('{"a":1} trailing'), '{"a":1}');
   assert.strictEqual(llm.extractBalanced('{"a":1'), null); // truncated → no balanced object
