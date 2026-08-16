@@ -33,7 +33,7 @@ function saveMeta(m) { try { fs.writeFileSync(META_PATH(), JSON.stringify(m, nul
 function loadConfig() {
   let c;
   try { c = JSON.parse(fs.readFileSync(CONFIG_PATH(), "utf8")); } catch { c = {}; }
-  if (!c.provider || !PROVIDERS[c.provider]) c.provider = "gemini";
+  if (!c.provider || !PROVIDERS[c.provider]) c.provider = "pollinations"; // free, no-key, capable — works out of the box
   if (!c.keys || typeof c.keys !== "object") c.keys = {};
   if (!c.model) c.model = PROVIDERS[c.provider].defaultModel;
   if (!c.engine || !ENGINES[c.engine]) c.engine = "unity";

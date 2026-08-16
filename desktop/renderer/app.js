@@ -41,12 +41,16 @@ function fillKV(el,obj,sel){el.innerHTML=Object.entries(obj).map(([k,v])=>`<opti
 
 function currentProvider(){return $("#provider").value;}
 function refreshConnectForm(){
-  const p=PROVIDERS[currentProvider()]; if(!p)return;
+  const id=currentProvider(), p=PROVIDERS[id]; if(!p)return;
+  const isOllama=id==="ollama", isHosted=!p.needsKey&&p.hosted; // pollinations = free hosted, no key
   $("#key-block").classList.toggle("hidden",!p.needsKey);
-  $("#ollama-help").classList.toggle("hidden",p.needsKey);
+  $("#ollama-help").classList.toggle("hidden",!isOllama);
   $("#key-hint").textContent=p.keyHint||"";
+  $("#get-key-btn").classList.toggle("hidden",isHosted); // nothing to fetch for the free hosted AI
   $("#get-key-btn").textContent=p.needsKey?"Get a free key →":"Install Ollama →";
-  $("#use-ollama").classList.toggle("hidden",!p.needsKey); // only show the shortcut on key providers
+  $("#use-ollama").classList.toggle("hidden",!p.needsKey||isHosted);
+  const note=$("#provider-note");
+  if(note) note.textContent=isHosted?"✓ Free hosted AI — no key, no sign-up, nothing to install. Just press Connect.":"";
   fill($("#c-model"),p.models,p.defaultModel);
 }
 async function checkOllama(){
@@ -68,8 +72,10 @@ async function checkOllama(){
 function showConnected(connected,provider){
   const chip=$("#conn-chip");
   chip.classList.toggle("off",!connected);
-  const name=PROVIDERS[provider]?PROVIDERS[provider].label.split("—")[0].trim():"";
-  $("#conn-text").textContent=connected?("Connected · "+name+(provider==="ollama"?" · ♾️ Unlimited":"")):"Not connected";
+  const pv=PROVIDERS[provider];
+  const name=pv?pv.label.split("—")[0].trim():"";
+  const badge=(pv&&!pv.needsKey)?" · ♾️ Unlimited":""; // no-key providers: pollinations (hosted) + ollama (local)
+  $("#conn-text").textContent=connected?("Connected · "+name+badge):"Not connected";
   $("#disconnect-btn").classList.toggle("hidden",!connected);
   $("#connect-view").classList.toggle("hidden",connected);
   $("#app-view").classList.toggle("hidden",!connected);

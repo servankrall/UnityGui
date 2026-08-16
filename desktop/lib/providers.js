@@ -4,6 +4,15 @@
 // =============================================================================
 
 const PROVIDERS = {
+  pollinations: {
+    label: "Free AI — no key, no limits (recommended)",
+    keyUrl: "https://pollinations.ai",
+    keyHint: "A free, hosted AI (GPT-class). No key, no sign-up, no quota to manage — just Connect.",
+    needsKey: false,
+    hosted: true, // cloud, no key (unlike Ollama which is local)
+    models: ["openai", "openai-large", "mistral", "qwen-coder"],
+    defaultModel: "openai",
+  },
   gemini: {
     label: "Google Gemini — free",
     keyUrl: "https://aistudio.google.com/app/apikey",
