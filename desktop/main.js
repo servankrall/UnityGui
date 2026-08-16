@@ -208,6 +208,9 @@ ipcMain.handle("templates:create", async (_e, id) => {
     saved = writers.writeProject("web", DEFAULT_OUT(), data, {});
     shell.openPath(saved.openTarget);
     try { const t = await captureWebThumb(saved.openTarget, path.join(saved.root, "thumb.png")); if (t) saved.thumb = t; } catch {}
+    if (saved.openTarget) data._openTarget = saved.openTarget;
+    if (saved.root) data._root = saved.root;
+    upsertConvo(convo);
   } catch (e) { saved = { error: e.message }; }
   return { ok: true, data, conversationId: convo.id, saved };
 });
@@ -240,8 +243,11 @@ ipcMain.handle("chat", async (_e, { prompt, conversationId }) => {
   if (!prompt || !prompt.trim()) return { ok: false, error: "Type a message first." };
   let convo = conversationId ? getConvo(conversationId) : null;
   try {
+    // Give the assistant context about any game already built in THIS thread, so
+    // it "knows what it created" and can talk about it in the same conversation.
+    const system = prompts.CHAT_SYSTEM + prompts.buildChatContext(convo);
     const userMsg = prompts.buildChatPrompt(convo ? convo.turns : [], prompt.trim());
-    const r = await generateResilient(c, prompts.CHAT_SYSTEM, userMsg, false, 1500);
+    const r = await generateResilient(c, system, userMsg, false, 1500);
     const text = (r.text || "").trim();
     if (!text) return { ok: false, error: "The AI returned an empty reply. Try again." };
     // Auto-heal: remember whichever provider/model actually answered.
@@ -251,7 +257,9 @@ ipcMain.handle("chat", async (_e, { prompt, conversationId }) => {
       saveConfig(c);
     }
     if (!convo) {
-      convo = { id: "c" + Date.now(), title: prompt.trim().slice(0, 48), engine: "chat", mode: "chat", createdAt: Date.now(), updatedAt: Date.now(), turns: [] };
+      // A brand-new conversation that starts with a chat. If a game is later made
+      // here, its engine replaces this placeholder.
+      convo = { id: "c" + Date.now(), title: prompt.trim().slice(0, 48), engine: "chat", createdAt: Date.now(), updatedAt: Date.now(), turns: [] };
     }
     convo.turns.push({ prompt: prompt.trim(), result: { assistant: true, text } });
     convo.updatedAt = Date.now();
@@ -266,12 +274,14 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
   if (!isConnected(c)) return { ok: false, error: "Not connected. Add your free API key first." };
 
   let convo = conversationId ? getConvo(conversationId) : null;
-  const engine = convo ? convo.engine : c.engine;
+  // A conversation can mix chat + game turns; if it has no real engine yet (a
+  // chat-first thread), use the one currently selected in the UI.
+  const engine = (convo && ENGINES[convo.engine]) ? convo.engine : c.engine;
 
-  // Regenerate: re-run the last user prompt of this conversation.
+  // Regenerate: re-run the prompt of the latest GAME in this conversation.
   if (regenerate && convo && convo.turns.length) {
-    prompt = convo.turns[convo.turns.length - 1].prompt;
-    convo.turns.pop(); // drop the old result; we'll replace it
+    const g = prompts.latestGame(convo.turns);
+    if (g) { prompt = g.prompt; convo.turns = convo.turns.filter(t => t !== g); }
   }
   // Auto-fix: build a "fix these runtime errors" refine instruction.
   if (fixErrors && fixErrors.length) prompt = prompts.buildFixPrompt(fixErrors);
@@ -286,9 +296,9 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
 
   try {
     const system = prompts.buildSystemPrompt(engine, c.style);
-    let userMsg = convo && convo.turns.length
-      ? prompts.buildRefinePrompt(convo.turns[convo.turns.length - 1].result, prompt)
-      : prompt;
+    // Refine from the latest GAME in the thread (there may be chat turns after it).
+    const priorGame = convo ? prompts.latestGame(convo.turns) : null;
+    let userMsg = priorGame ? prompts.buildRefinePrompt(priorGame.result, prompt) : prompt;
     if (assets.length) userMsg += prompts.buildAssetHint(engine, assets.map(a => a.name));
     const badFiles = (d) => !d || !Array.isArray(d.files) || d.files.length === 0;
 
@@ -342,6 +352,7 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
     if (!convo) {
       convo = { id: "c" + Date.now(), title: (data.game_name || prompt).slice(0, 48), engine, createdAt: Date.now(), updatedAt: Date.now(), turns: [] };
     }
+    convo.engine = engine; // a chat-first thread becomes a game thread of this engine
     convo.turns.push({ prompt, result: data });
     convo.updatedAt = Date.now();
     convo.title = (data.game_name || convo.title).slice(0, 48);
@@ -366,6 +377,13 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
           }
         }
       } catch (e) { saved = { error: e.message }; }
+    }
+    // Persist where the game was written INTO the turn, so its Play/Open button
+    // still works after later chat turns (or when the conversation is reopened).
+    if (saved && (saved.openTarget || saved.root)) {
+      if (saved.openTarget) data._openTarget = saved.openTarget;
+      if (saved.root) data._root = saved.root;
+      upsertConvo(convo);
     }
     return { ok: true, data, conversationId: convo.id, saved, usedProvider, usedModel };
   } catch (e) { return { ok: false, error: e.message }; }

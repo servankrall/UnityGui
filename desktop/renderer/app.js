@@ -16,6 +16,7 @@ let libItems = [];           // cached project list for the library modal
 let libQuery = "";           // library text filter
 let libTags = new Set();     // selected tag "collection" filters (OR)
 let currentMode = "game";    // "game" = generate a game · "chat" = talk to the AI
+let thumbCache = {};         // openTarget → preview data URL (kept for the session)
 
 // Example questions shown on the empty "Ask AI" screen.
 const CHAT_EXAMPLES = [
@@ -368,7 +369,7 @@ async function onCreateTemplate(id){
   conversationId=r.conversationId;
   const c=await window.api.getConvo(conversationId); currentTurns=c?c.turns:[];
   const last=currentTurns[currentTurns.length-1];
-  if(last&&r.saved){ if(r.saved.openTarget)last._openTarget=r.saved.openTarget; if(r.saved.root)last._root=r.saved.root; if(r.saved.thumb)last._thumb=r.saved.thumb; }
+  if(last&&r.saved){ if(r.saved.openTarget)last._openTarget=r.saved.openTarget; if(r.saved.root)last._root=r.saved.root; if(r.saved.thumb){last._thumb=r.saved.thumb; if(r.saved.openTarget)thumbCache[r.saved.openTarget]=r.saved.thumb;} }
   currentEngine="web"; $("#engine").value="web"; $("#engine").disabled=true;
   renderTurns(); await refreshConvos();
   setStatus($("#gen-status"),"Template ready ✓ — Play it, edit the code, or refine it in chat.",false);
@@ -546,39 +547,52 @@ function newChat(){
 async function selectConvo(id){
   const c=await window.api.getConvo(id); if(!c)return;
   conversationId=id; currentTurns=c.turns;
-  if(c.mode==="chat"||c.engine==="chat"){
-    setMode("chat"); lockMode(true);
-    $("#prompt").value=""; $("#prompt").placeholder="Ask a follow-up…";
-  }else{
-    setMode("game"); lockMode(true);
+  lockMode(false); // a thread can mix chat + game — the toggle is always available
+  const hasGame=c.turns.some(t=>t.result&&Array.isArray(t.result.files)&&t.result.files.length);
+  if(hasGame&&ENGINES[c.engine]){
     currentEngine=c.engine;
     $("#engine").value=c.engine; $("#engine").disabled=true; renderGenres();
-    $("#prompt").placeholder="Ask for a change… (e.g. make it faster, add enemies)";
+  }else{
+    $("#engine").disabled=false; // no game yet → they can still pick an engine
   }
+  // Default the composer mode to whatever the last turn was.
+  const last=c.turns[c.turns.length-1];
+  setMode(last&&last.result&&last.result.assistant?"chat":"game");
+  $("#prompt").value="";
+  $("#prompt").placeholder=currentMode==="chat"?"Ask a follow-up…":(hasGame?"Ask for a change… (e.g. make it faster, add enemies)":"Describe your game…");
   renderTurns();
   refreshConvos();
 }
 
+// Where a game turn was written (survives later chat turns / reload).
+function targetOf(t){ return t && (t._openTarget || (t.result && t.result._openTarget)) || null; }
+function rootOf(t){ return t && (t._root || (t.result && t.result._root)) || null; }
+function thumbOf(t){ return (t && t._thumb) || thumbCache[targetOf(t)] || null; }
+function isGameTurn(t){ return !!(t && t.result && Array.isArray(t.result.files) && t.result.files.length); }
+function lastGameTurn(){ for(let i=currentTurns.length-1;i>=0;i--) if(isGameTurn(currentTurns[i])) return currentTurns[i]; return null; }
+
 function renderTurns(){
   const box=$("#turns");
   if(!currentTurns.length){newChat();return;}
-  box.innerHTML=currentTurns.map((t,i)=>turnHtml(t,i,i===currentTurns.length-1)).join("");
-  // wire per-turn actions
-  const last=currentTurns[currentTurns.length-1];
+  // The most recent GAME turn owns the action buttons — even if chat turns follow it.
+  let lastGameIdx=-1;
+  currentTurns.forEach((t,i)=>{ if(isGameTurn(t)) lastGameIdx=i; });
+  box.innerHTML=currentTurns.map((t,i)=>turnHtml(t,i,i===lastGameIdx)).join("");
+  const game=lastGameIdx>=0?currentTurns[lastGameIdx]:null;
   const openBtn=box.querySelector("#open-btn"), saveBtn=box.querySelector("#save-btn"), regenBtn=box.querySelector("#regen-btn"), zipBtn=box.querySelector("#zip-btn"), previewBtn=box.querySelector("#preview-btn"), htmlBtn=box.querySelector("#html-btn");
-  if(openBtn) openBtn.addEventListener("click",()=>openInEngine(last));
-  if(htmlBtn) htmlBtn.addEventListener("click",()=>onStandalone(last));
+  if(openBtn) openBtn.addEventListener("click",()=>openInEngine(game));
+  if(htmlBtn) htmlBtn.addEventListener("click",()=>onStandalone(game));
   const checkBtn=box.querySelector("#check-btn");
-  if(checkBtn) checkBtn.addEventListener("click",()=>onCheckFix(last));
+  if(checkBtn) checkBtn.addEventListener("click",()=>onCheckFix(game));
   const phoneBtn=box.querySelector("#phone-btn");
-  if(phoneBtn) phoneBtn.addEventListener("click",()=>onPlayPhone(last));
+  if(phoneBtn) phoneBtn.addEventListener("click",()=>onPlayPhone(game));
   if(previewBtn) previewBtn.addEventListener("click",async()=>{
-    if(!last._openTarget){toast("Generate first");return;}
-    const r=await window.api.previewGame(last._openTarget);
+    const tgt=targetOf(game); if(!tgt){toast("Generate first");return;}
+    const r=await window.api.previewGame(tgt);
     if(r&&!r.ok) toast(r.error||"Couldn't open preview");
   });
-  if(saveBtn) saveBtn.addEventListener("click",()=>onSave(last.result));
-  if(zipBtn) zipBtn.addEventListener("click",()=>onShareZip(last.result));
+  if(saveBtn) saveBtn.addEventListener("click",()=>onSave(game.result));
+  if(zipBtn) zipBtn.addEventListener("click",()=>onShareZip(game.result));
   if(regenBtn) regenBtn.addEventListener("click",onRegenerate);
   // copy buttons — read the <pre> directly (handles quotes/newlines safely)
   box.querySelectorAll(".file .copy").forEach(b=>b.addEventListener("click",()=>{
@@ -598,7 +612,7 @@ function renderTurns(){
     det.querySelector(".code-editor").classList.add("hidden");
     det.querySelector(".code").classList.remove("hidden");
   }));
-  box.querySelectorAll(".file .save-file").forEach(b=>b.addEventListener("click",()=>onSaveFile(last,+b.dataset.fi,b.closest(".file"))));
+  box.querySelectorAll(".file .save-file").forEach(b=>b.addEventListener("click",()=>onSaveFile(game,+b.dataset.fi,b.closest(".file"))));
   box.scrollTop=box.scrollHeight;
 }
 
@@ -623,6 +637,7 @@ function mdLite(t){
   s=esc(s);
   s=s.replace(/`([^`\n]+)`/g,"<code>$1</code>");
   s=s.replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>");
+  s=s.replace(/\*([^*\n]+)\*/g,"<em>$1</em>"); // single-* italic (after bold)
   s=s.replace(/\n/g,"<br>");
   s=s.replace(/\[\[\[CODE(\d+)\]\]\]/g,(m,i)=>`<pre class="chat-code">${esc(blocks[+i])}</pre>`);
   return s;
@@ -636,14 +651,15 @@ function turnHtml(t,idx,isLast){
       <div class="bubble ai chat-ai">${mdLite(d.text||"")}</div>
     </div>`;
   }
-  const editable=isLast&&(d.engine==="web"||d.engine==="unity")&&!!t._root;
+  const editable=isLast&&(d.engine==="web"||d.engine==="unity")&&!!rootOf(t);
   const files=(d.files||[]).map((f,i)=>fileBlock(f,i,editable,d.engine)).join("");
   const engineName=ENGINES[d.engine]||"";
+  const thumb=thumbOf(t);
   return `
   <div class="turn">
     <div class="bubble user">${esc(t.prompt)}</div>
     <div class="bubble ai">
-      ${t._thumb?`<img class="turn-thumb" src="${t._thumb}" alt="preview" />`:""}
+      ${thumb?`<img class="turn-thumb" src="${thumb}" alt="preview" />`:""}
       <div class="res-title">${esc(d.game_name||"Game")} <span class="pill">${esc(engineName.split(" ")[0])}</span></div>
       <div class="res-sum">${esc(d.summary||"")}</div>
       ${d.setup_notes?`<div class="notes">${esc(d.setup_notes)}</div>`:""}
@@ -710,24 +726,24 @@ async function onArt(){
 
 // ---- Open a finished project in its engine ---------------------------------
 async function openInEngine(t){
-  const eng=t&&t.result&&t.result.engine;
-  if(!t||!t._openTarget){toast("Generate first");return;}
+  const eng=t&&t.result&&t.result.engine, tgt=targetOf(t);
+  if(!tgt){toast("Generate first");return;}
   if(eng==="unity"){
-    const r=await window.api.openUnity(t._openTarget);
+    const r=await window.api.openUnity(tgt);
     if(r&&r.ok){toast("Opening in Unity ✓");return;}
     if(r&&r.needsUnity){
       if(confirm("Unity Editor wasn't found automatically.\n\nLocate your Unity.exe now? (one time)")){
         const pick=await window.api.pickUnityExe();
-        if(pick&&pick.ok){ const r2=await window.api.openUnity(t._openTarget); if(r2&&r2.ok){toast("Opening in Unity ✓");return;} }
+        if(pick&&pick.ok){ const r2=await window.api.openUnity(tgt); if(r2&&r2.ok){toast("Opening in Unity ✓");return;} }
       }
-      window.api.revealPath(t._openTarget); // fallback: show the folder
+      window.api.revealPath(tgt); // fallback: show the folder
       return;
     }
     toast((r&&r.error)||"Couldn't open Unity");
   } else if(eng==="web"){
-    window.api.previewGame(t._openTarget);
+    window.api.previewGame(tgt);
   } else {
-    window.api.openPath(t._openTarget);
+    window.api.openPath(tgt);
   }
 }
 
@@ -756,7 +772,7 @@ async function runGenerate(payload,busyMsg){
   const last=currentTurns[currentTurns.length-1];
   if(last&&r.saved&&r.saved.openTarget){last._openTarget=r.saved.openTarget;}
   if(last&&r.saved&&r.saved.root){last._root=r.saved.root;}
-  if(last&&r.saved&&r.saved.thumb){last._thumb=r.saved.thumb;}
+  if(last&&r.saved&&r.saved.thumb){last._thumb=r.saved.thumb; if(r.saved.openTarget) thumbCache[r.saved.openTarget]=r.saved.thumb;}
   $("#engine").disabled=true;
   $("#prompt").value=""; $("#prompt").placeholder="Ask for a change… (e.g. make it faster, add enemies)";
   renderTurns();
@@ -798,7 +814,6 @@ async function onChat(){
   conversationId=r.conversationId;
   const c=await window.api.getConvo(conversationId); currentTurns=c?c.turns:currentTurns;
   $("#prompt").value=""; $("#prompt").placeholder="Ask a follow-up…";
-  lockMode(true); // the conversation is now an AI chat — lock its type
   renderTurns();
   await refreshConvos();
   if(r.usedProvider&&r.usedProvider!==activeProvider){
@@ -823,21 +838,21 @@ async function onSave(data){
 
 async function onSaveFile(t,i,det){
   if(!t||!t.result||!t.result.files[i]){toast("Nothing to save");return;}
-  const f=t.result.files[i];
+  const f=t.result.files[i], root=rootOf(t), tgt=targetOf(t);
   const content=det.querySelector(".code-edit").value;
-  const r=await window.api.saveFile({root:t._root,engine:t.result.engine,file:{path:f.path,name:f.name,kind:f.kind},content});
+  const r=await window.api.saveFile({root,engine:t.result.engine,file:{path:f.path,name:f.name,kind:f.kind},content});
   if(!r||!r.ok){toast((r&&r.error)||"Save failed");return;}
   f.content=content; det.querySelector(".code").textContent=content;
   det.querySelector(".code-editor").classList.add("hidden");
   det.querySelector(".code").classList.remove("hidden");
-  if(t.result.engine==="web"&&t._openTarget){ window.api.previewGame(t._openTarget); setStatus($("#gen-status"),"Saved & re-launched preview ✓",false); toast("Saved ✓"); }
+  if(t.result.engine==="web"&&tgt){ window.api.previewGame(tgt); setStatus($("#gen-status"),"Saved & re-launched preview ✓",false); toast("Saved ✓"); }
   else { toast("Saved ✓ — Unity recompiles when you focus it"); setStatus($("#gen-status"),"Saved to the Unity project ✓",false); }
 }
 
 async function onPlayPhone(t){
-  if(!t||!t._root){toast("Generate first");return;}
+  const root=rootOf(t); if(!root){toast("Generate first");return;}
   setStatus($("#gen-status"),"Starting a local server…",false,true);
-  const r=await window.api.servePhone(t._root);
+  const r=await window.api.servePhone(root);
   if(!r||!r.ok){setStatus($("#gen-status"),(r&&r.error)||"Couldn't start the server.",true);return;}
   try{ await navigator.clipboard.writeText(r.url); }catch{}
   setStatus($("#gen-status"),"📱 On your phone (same Wi‑Fi) open: "+r.url+"  (copied to clipboard)",false);
@@ -845,10 +860,10 @@ async function onPlayPhone(t){
 }
 
 async function onCheckFix(t){
-  if(!t||!t._openTarget){toast("Generate first");return;}
+  const tgt=targetOf(t); if(!tgt){toast("Generate first");return;}
   const btn=document.querySelector("#check-btn"); if(btn)btn.disabled=true;
   setStatus($("#gen-status"),"Running the game and checking for errors…",false,true);
-  const r=await window.api.checkWeb(t._openTarget);
+  const r=await window.api.checkWeb(tgt);
   if(btn)btn.disabled=false;
   if(!r||!r.ok){setStatus($("#gen-status"),(r&&r.error)||"Couldn't run the check.",true);return;}
   if(!r.errors.length){setStatus($("#gen-status"),"No runtime errors found ✓",false);toast("No errors ✓");return;}
@@ -860,7 +875,7 @@ async function onCheckFix(t){
 }
 
 async function onStandalone(t){
-  const root=t&&t._root; if(!root){toast("Generate first");return;}
+  const root=rootOf(t); if(!root){toast("Generate first");return;}
   setStatus($("#gen-status"),"Building single .html…",false,true);
   const r=await window.api.standaloneHtml(root);
   if(!r.ok){setStatus($("#gen-status"),r.error||"Couldn't build the file.",true);return;}

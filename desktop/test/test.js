@@ -268,6 +268,29 @@ test("buildCandidates: active provider first, multi-key, Ollama last", () => {
   assert.strictEqual(cands[cands.length - 1].provider, "ollama"); // unlimited last resort
 });
 
+test("ollamaCandidateModels: uses INSTALLED models, preferring the requested one", async () => {
+  global.fetch = async (url) => {
+    assert.ok(String(url).includes("/api/tags"), "queries installed models");
+    return mockRes(true, 200, JSON.stringify({ models: [{ name: "llama3.2:latest" }, { name: "qwen2.5-coder:7b" }] }));
+  };
+  // exact match → first
+  let list = await llm.ollamaCandidateModels("qwen2.5-coder:7b");
+  assert.strictEqual(list[0], "qwen2.5-coder:7b");
+  assert.strictEqual(list.length, 2);
+  // requested tag not installed but same base is → picks the installed same-base first
+  list = await llm.ollamaCandidateModels("qwen2.5-coder:32b");
+  assert.strictEqual(list[0], "qwen2.5-coder:7b");
+  // requested model absent entirely (the reported bug) → falls back to what's installed, no 404
+  list = await llm.ollamaCandidateModels("deepseek-coder-v2:16b");
+  assert.deepStrictEqual(list, ["llama3.2:latest", "qwen2.5-coder:7b"]);
+});
+test("ollamaCandidateModels: clear, actionable errors when not running / no models", async () => {
+  global.fetch = async () => { throw new Error("ECONNREFUSED"); };
+  await assert.rejects(() => llm.ollamaCandidateModels("x"), /isn't running/);
+  global.fetch = async () => mockRes(true, 200, JSON.stringify({ models: [] }));
+  await assert.rejects(() => llm.ollamaCandidateModels("x"), /No Ollama models/);
+});
+
 test("generateResilient: rotates to the next key when the first is rate-limited", async () => {
   const seen = [];
   global.fetch = async (url) => {
@@ -463,6 +486,23 @@ test("prompts.CHAT_SYSTEM: keeps replies conversational + same-language", () => 
   const s = prompts.CHAT_SYSTEM.toLowerCase();
   assert.ok(/same language/.test(s), "instructs to match the user's language");
   assert.ok(!/json/.test(s), "not a JSON/game prompt");
+});
+test("prompts.buildChatPrompt: represents game-building turns in the transcript", () => {
+  const turns = [{ prompt: "make a snake", result: { engine: "web", game_name: "Neon Snake", summary: "eat food", files: [{ path: "index.html", content: "x" }] } }];
+  const p = prompts.buildChatPrompt(turns, "what did you make?");
+  assert.ok(/Built the web game "Neon Snake"/.test(p), "game turn summarized, not blank");
+  assert.ok(/User: what did you make\?/.test(p));
+});
+test("prompts.latestGame + buildChatContext: unified thread awareness", () => {
+  const convo = { turns: [
+    { prompt: "make pong", result: { engine: "web", game_name: "Pong", summary: "bounce", files: [{ path: "index.html", content: "y" }] } },
+    { prompt: "cool?", result: { assistant: true, text: "yes!" } },
+  ] };
+  const g = prompts.latestGame(convo.turns);
+  assert.ok(g && g.result.game_name === "Pong", "finds the game turn past a later chat turn");
+  const ctx = prompts.buildChatContext(convo);
+  assert.ok(/Pong/.test(ctx) && /index\.html/.test(ctx), "context names the game + its files");
+  assert.strictEqual(prompts.buildChatContext({ turns: [{ prompt: "hi", result: { assistant: true, text: "hey" } }] }), "", "no game → empty context");
 });
 
 // ---- project tags (collections) --------------------------------------------
