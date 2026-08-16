@@ -164,8 +164,28 @@ function buildEnhancePrompt(engine, idea) {
   return `Target engine: ${eng}. Turn this idea into a detailed, buildable game brief:\n\n"${idea}"`;
 }
 
+// ---- Conversational assistant ("Ask AI") -----------------------------------
+// A normal chat mode: the AI just talks back (no game/JSON), so users can ask
+// questions, brainstorm, or get help — answered in their own language.
+const CHAT_SYSTEM =
+  "You are UnityGUI's friendly built-in AI assistant. UnityGUI is a free desktop app that turns a text prompt into a complete, playable Unity (C#), Roblox Studio (Luau), or Web (HTML5) game. " +
+  "Chat naturally and help with anything: game ideas and design, gameplay or coding questions, debugging, and how to use the app (connecting a free provider, picking an engine, Auto-open, templates, tags, the guided tour). " +
+  "Be concise and practical — short paragraphs, and simple bullet lists or fenced ``` code blocks only when they help. " +
+  "IMPORTANT: reply in the SAME LANGUAGE the user writes in (for example, answer Turkish in Turkish).";
+
+// Fold the recent conversation + the new message into a single transcript prompt
+// (our provider client sends one system + one user message).
+function buildChatPrompt(turns, message) {
+  const hist = (turns || []).slice(-8).map(t => {
+    const a = t.result && t.result.text ? t.result.text : "";
+    return "User: " + t.prompt + "\nAssistant: " + a;
+  }).join("\n\n");
+  return (hist ? hist + "\n\n" : "") + "User: " + message + "\nAssistant:";
+}
+
 module.exports = {
   styleLine, GENRES, genresFor, MODIFIERS,
   buildSystemPrompt, buildRefinePrompt, buildFixPrompt, buildAssetHint,
   ENHANCE_SYSTEM, buildEnhancePrompt,
+  CHAT_SYSTEM, buildChatPrompt,
 };

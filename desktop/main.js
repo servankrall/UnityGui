@@ -233,6 +233,33 @@ ipcMain.handle("prompt:enhance", async (_e, { idea, engine }) => {
   } catch (e) { return { ok: false, error: e.message }; }
 });
 
+// ---- IPC: chat (conversational assistant — answers in text, no game) -------
+ipcMain.handle("chat", async (_e, { prompt, conversationId }) => {
+  const c = loadConfig();
+  if (!isConnected(c)) return { ok: false, error: "Not connected. Add a free API key — or use unlimited Ollama (no key)." };
+  if (!prompt || !prompt.trim()) return { ok: false, error: "Type a message first." };
+  let convo = conversationId ? getConvo(conversationId) : null;
+  try {
+    const userMsg = prompts.buildChatPrompt(convo ? convo.turns : [], prompt.trim());
+    const r = await generateResilient(c, prompts.CHAT_SYSTEM, userMsg, false, 1500);
+    const text = (r.text || "").trim();
+    if (!text) return { ok: false, error: "The AI returned an empty reply. Try again." };
+    // Auto-heal: remember whichever provider/model actually answered.
+    if ((r.provider && r.provider !== c.provider) || (r.model && r.model !== c.model)) {
+      if (r.provider) c.provider = r.provider;
+      if (r.model) c.model = r.model;
+      saveConfig(c);
+    }
+    if (!convo) {
+      convo = { id: "c" + Date.now(), title: prompt.trim().slice(0, 48), engine: "chat", mode: "chat", createdAt: Date.now(), updatedAt: Date.now(), turns: [] };
+    }
+    convo.turns.push({ prompt: prompt.trim(), result: { assistant: true, text } });
+    convo.updatedAt = Date.now();
+    upsertConvo(convo);
+    return { ok: true, text, conversationId: convo.id, usedProvider: r.provider, usedModel: r.model };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
 // ---- IPC: generate (with refine + regenerate + conversation) ---------------
 ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, image, images: imagesIn, fixErrors }) => {
   const c = loadConfig();

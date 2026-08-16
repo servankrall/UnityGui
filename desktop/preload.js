@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld("api", {
   favoriteConvo: (id, favorite) => ipcRenderer.invoke("convos:favorite", { id, favorite }),
 
   enhancePrompt: (idea, engine) => ipcRenderer.invoke("prompt:enhance", { idea, engine }),
+  chat: (payload) => ipcRenderer.invoke("chat", payload),
   generate: (payload) => ipcRenderer.invoke("generate", payload),
   pickImage: () => ipcRenderer.invoke("dialog:pickImage"),
   generateArt: (payload) => ipcRenderer.invoke("art:generate", payload),

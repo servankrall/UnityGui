@@ -15,6 +15,15 @@ let tour = null;             // active tour: { kind, steps, i }
 let libItems = [];           // cached project list for the library modal
 let libQuery = "";           // library text filter
 let libTags = new Set();     // selected tag "collection" filters (OR)
+let currentMode = "game";    // "game" = generate a game · "chat" = talk to the AI
+
+// Example questions shown on the empty "Ask AI" screen.
+const CHAT_EXAMPLES = [
+  "Give me 5 original 2D game ideas I could build here",
+  "How do I add a double jump to a Unity platformer?",
+  "What's a good first game for a beginner?",
+  "How can I make my web game more fun and juicy?",
+];
 
 // One-line example prompts shown on the empty "new chat" screen, per engine.
 const EXAMPLES = {
@@ -52,13 +61,14 @@ async function checkOllama(){
     s.innerHTML="Ollama is running ✓ but no models yet. Run <code>ollama pull qwen2.5-coder</code>, then Connect.";
   }else{
     fill($("#c-model"),r.models,r.models[0]);
-    s.innerHTML="Ollama running ✓ — "+r.models.length+" model(s): "+esc(r.models.slice(0,4).join(", "))+". Unlimited & free — pick one and Connect.";
+    s.innerHTML="Ollama running ✓ — "+r.models.length+" model(s): "+esc(r.models.slice(0,4).join(", "))+". <b>♾️ Unlimited & free — no key, no credits, no limits.</b> Pick one and Connect.";
   }
 }
 function showConnected(connected,provider){
   const chip=$("#conn-chip");
   chip.classList.toggle("off",!connected);
-  $("#conn-text").textContent=connected?("Connected · "+(PROVIDERS[provider]?PROVIDERS[provider].label.split("—")[0].trim():"")):"Not connected";
+  const name=PROVIDERS[provider]?PROVIDERS[provider].label.split("—")[0].trim():"";
+  $("#conn-text").textContent=connected?("Connected · "+name+(provider==="ollama"?" · ♾️ Unlimited":"")):"Not connected";
   $("#disconnect-btn").classList.toggle("hidden",!connected);
   $("#connect-view").classList.toggle("hidden",connected);
   $("#app-view").classList.toggle("hidden",!connected);
@@ -114,6 +124,11 @@ async function init(){
   $("#convo-search").addEventListener("input",e=>{convoQuery=e.target.value;renderConvos();});
   $("#generate-btn").addEventListener("click",onGenerate);
   $("#prompt").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")onGenerate();});
+  document.querySelectorAll("#mode-switch .mode-btn").forEach(b=>b.addEventListener("click",()=>{
+    if(b.disabled||b.dataset.mode===currentMode)return;
+    setMode(b.dataset.mode);
+    if(!conversationId&&!currentTurns.length) renderEmpty();
+  }));
 
   // guided tour
   $("#help-btn").addEventListener("click",()=>startTour($("#app-view").classList.contains("hidden")?"connect":"app"));
@@ -198,7 +213,7 @@ function renderConvos(){
       <button class="convo-star ${c.favorite?"on":""}" data-star="${c.id}" title="Favorite">${c.favorite?"★":"☆"}</button>
       <div class="convo-main">
         <div class="convo-title">${esc(c.title||"Untitled")}</div>
-        <div class="convo-meta">${ENGINES[c.engine]?esc(ENGINES[c.engine].split(" ")[0]):esc(c.engine)} · ${c.turns} msg</div>
+        <div class="convo-meta">${c.engine==="chat"?"💬 Chat":(ENGINES[c.engine]?esc(ENGINES[c.engine].split(" ")[0]):esc(c.engine))} · ${c.turns} msg</div>
       </div>
       <button class="convo-del" data-del="${c.id}" title="Delete">✕</button>
     </div>`).join(""):(q?`<div class="convo-empty">No chats match “${esc(convoQuery)}”.</div>`:`<div class="convo-empty">No chats yet. Start one below.</div>`);
@@ -467,40 +482,79 @@ function startAddLibTag(i,btn){
   inp.addEventListener("blur",()=>commit(true));
 }
 
-function newChat(){
-  conversationId=null; currentTurns=[]; clearAssets();
-  const examples=EXAMPLES[currentEngine]||EXAMPLES.unity;
-  $("#turns").innerHTML=`<div class="turns-empty">
-    <div class="art">🎮</div>
-    <h2>Start a new game</h2>
-    <p>Pick an engine, tap a genre, or just describe a game — then press ✦ Generate. Keep chatting to refine it.</p>
-    <div class="empty-actions">
-      <button class="btn btn-ghost" id="empty-templates">🧩 Use a template</button>
-      <button class="btn btn-ghost" id="empty-tour">🎓 Take the tour</button>
-    </div>
-    <div class="empty-examples">
-      <div class="empty-hint">Try one of these</div>
-      ${examples.map(e=>`<button class="chip-btn" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}
-    </div>
-  </div>`;
-  $("#engine").disabled=false;
-  $("#prompt").value=""; $("#prompt").placeholder="Describe your game…";
-  setStatus($("#gen-status"),"");
+// Toggle the composer between game-generation and AI-chat mode.
+function setMode(mode){
+  currentMode=mode;
+  document.querySelectorAll("#mode-switch .mode-btn").forEach(b=>b.classList.toggle("on",b.dataset.mode===mode));
+  const chat=mode==="chat";
+  const hide=(sel,h)=>{const el=$(sel); if(el) el.classList.toggle("hidden",h);};
+  hide(".controls",chat); hide("#genres",chat); hide("#modifiers",chat); hide("#assets",chat);
+  hide("#enhance-btn",chat); hide("#art-btn",chat); hide("#attach-btn",chat);
+  $("#generate-btn").textContent=chat?"💬 Send":"✦ Generate";
+  $("#prompt").placeholder=chat?"Ask me anything… (game ideas, code help, how to use the app)":"Describe your game…";
+}
+// Lock/unlock the mode switch — a conversation's type is fixed once it has turns.
+function lockMode(lock){
+  document.querySelectorAll("#mode-switch .mode-btn").forEach(b=>{b.disabled=lock;});
+  $("#mode-switch").classList.toggle("locked",lock);
+}
+function renderEmpty(){
   document.querySelectorAll("#convos .convo").forEach(el=>el.classList.remove("active"));
-  const et=$("#empty-templates"), eo=$("#empty-tour");
-  if(et) et.addEventListener("click",openTemplates);
-  if(eo) eo.addEventListener("click",()=>startTour("app"));
+  if(currentMode==="chat"){
+    $("#turns").innerHTML=`<div class="turns-empty">
+      <div class="art chat">💬</div>
+      <h2>Ask the AI</h2>
+      <p>Chat with the built-in AI — game ideas, design help, code questions, or how to use UnityGUI. It replies in your language.</p>
+      <div class="empty-examples">
+        <div class="empty-hint">Try asking</div>
+        ${CHAT_EXAMPLES.map(e=>`<button class="chip-btn" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}
+      </div>
+    </div>`;
+  }else{
+    const examples=EXAMPLES[currentEngine]||EXAMPLES.unity;
+    $("#turns").innerHTML=`<div class="turns-empty">
+      <div class="art">🎮</div>
+      <h2>Start a new game</h2>
+      <p>Pick an engine, tap a genre, or just describe a game — then press ✦ Generate. Keep chatting to refine it.</p>
+      <div class="empty-actions">
+        <button class="btn btn-ghost" id="empty-templates">🧩 Use a template</button>
+        <button class="btn btn-ghost" id="empty-tour">🎓 Take the tour</button>
+      </div>
+      <div class="empty-examples">
+        <div class="empty-hint">Try one of these</div>
+        ${examples.map(e=>`<button class="chip-btn" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}
+      </div>
+    </div>`;
+    const et=$("#empty-templates"), eo=$("#empty-tour");
+    if(et) et.addEventListener("click",openTemplates);
+    if(eo) eo.addEventListener("click",()=>startTour("app"));
+  }
   document.querySelectorAll(".empty-examples .chip-btn").forEach(b=>b.addEventListener("click",()=>{
     $("#prompt").value=b.dataset.ex; $("#prompt").focus();
   }));
+}
+function newChat(){
+  conversationId=null; currentTurns=[]; clearAssets();
+  setMode("game"); lockMode(false);
+  $("#engine").disabled=false;
+  $("#prompt").value="";
+  setStatus($("#gen-status"),"");
+  renderEmpty();
   $("#prompt").focus();
 }
 
 async function selectConvo(id){
   const c=await window.api.getConvo(id); if(!c)return;
-  conversationId=id; currentEngine=c.engine; currentTurns=c.turns;
-  $("#engine").value=c.engine; $("#engine").disabled=true; renderGenres();
-  $("#prompt").placeholder="Ask for a change… (e.g. make it faster, add enemies)";
+  conversationId=id; currentTurns=c.turns;
+  if(c.mode==="chat"||c.engine==="chat"){
+    setMode("chat"); lockMode(true);
+    $("#prompt").value=""; $("#prompt").placeholder="Ask a follow-up…";
+  }else{
+    setMode("game"); lockMode(true);
+    currentEngine=c.engine;
+    $("#engine").value=c.engine; $("#engine").disabled=true; renderGenres();
+    $("#prompt").placeholder="Ask for a change… (e.g. make it faster, add enemies)";
+  }
   renderTurns();
   refreshConvos();
 }
@@ -562,8 +616,26 @@ function fileBlock(f,i,editable,engine){
   </details>`;
 }
 
+// Minimal, safe markdown for AI chat replies: fenced/inline code, bold, breaks.
+function mdLite(t){
+  const blocks=[];
+  let s=String(t==null?"":t).replace(/```([\s\S]*?)```/g,(m,code)=>{ blocks.push(code.replace(/^([a-zA-Z][\w+#-]*)?\n/,"").replace(/\n$/,"")); return "[[[CODE"+(blocks.length-1)+"]]]"; });
+  s=esc(s);
+  s=s.replace(/`([^`\n]+)`/g,"<code>$1</code>");
+  s=s.replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>");
+  s=s.replace(/\n/g,"<br>");
+  s=s.replace(/\[\[\[CODE(\d+)\]\]\]/g,(m,i)=>`<pre class="chat-code">${esc(blocks[+i])}</pre>`);
+  return s;
+}
+
 function turnHtml(t,idx,isLast){
   const d=t.result||{};
+  if(d.assistant){
+    return `<div class="turn">
+      <div class="bubble user">${esc(t.prompt)}</div>
+      <div class="bubble ai chat-ai">${mdLite(d.text||"")}</div>
+    </div>`;
+  }
   const editable=isLast&&(d.engine==="web"||d.engine==="unity")&&!!t._root;
   const files=(d.files||[]).map((f,i)=>fileBlock(f,i,editable,d.engine)).join("");
   const engineName=ENGINES[d.engine]||"";
@@ -705,11 +777,34 @@ async function runGenerate(payload,busyMsg){
 }
 
 async function onGenerate(){
+  if(currentMode==="chat") return onChat();
   const prompt=$("#prompt").value.trim();
   if(!prompt){setStatus($("#gen-status"),"Describe your game (or a change) first.",true);return;}
   const images=assets.map(a=>({name:a.name,mime:a.mime,base64:a.base64}));
   const r=await runGenerate({prompt,conversationId,images},conversationId?"Refining…":"Generating — this can take a minute…");
   if(r&&r.ok) clearAssets();
+}
+
+// ---- AI chat (Ask AI mode): the assistant answers in text -------------------
+async function onChat(){
+  const msg=$("#prompt").value.trim();
+  if(!msg){setStatus($("#gen-status"),"Type a message first.",true);return;}
+  const btn=$("#generate-btn");btn.disabled=true;
+  setStatus($("#gen-status"),"Thinking…",false,true);
+  const r=await window.api.chat({prompt:msg,conversationId});
+  btn.disabled=false;
+  if(!r||!r.ok){setStatus($("#gen-status"),(r&&r.error)||"Couldn't get a reply.",true);return;}
+  setStatus($("#gen-status"),"");
+  conversationId=r.conversationId;
+  const c=await window.api.getConvo(conversationId); currentTurns=c?c.turns:currentTurns;
+  $("#prompt").value=""; $("#prompt").placeholder="Ask a follow-up…";
+  lockMode(true); // the conversation is now an AI chat — lock its type
+  renderTurns();
+  await refreshConvos();
+  if(r.usedProvider&&r.usedProvider!==activeProvider){
+    const name=PROVIDERS[r.usedProvider]?PROVIDERS[r.usedProvider].label.split("—")[0].trim():r.usedProvider;
+    activeProvider=r.usedProvider; showConnected(true,r.usedProvider); toast("Switched to "+name+" ✓");
+  }
 }
 
 async function onRegenerate(){
