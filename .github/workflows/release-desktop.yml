@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.19)"
+        description: "Release tag to publish (e.g. v1.0.20)"
         required: true
-        default: "v1.0.19"
+        default: "v1.0.20"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -64,6 +64,8 @@ jobs:
             - **In-app code editor** — edit generated code: **Web** Save & re-runs the preview; **Unity** writes back to the project
             - **🔧 Auto QA** — for Web games, catch runtime/console errors and let the AI **auto-fix** them in one click
             - **📱 Play on phone** — for Web games, get a LAN URL to open and play the game on your phone (same Wi‑Fi)
+            - **💬 Ask AI (chat mode)** — talk to a built-in AI assistant that **answers in text** (game ideas, code help, how to use the app) — in your own language; toggle **✦ Make a game / 💬 Ask AI** in the composer
+            - **♾️ Ollama is truly unlimited** — the header now shows **“♾️ Unlimited”** when Ollama is active: no key, **no credits**, no limits (offline, on your PC)
             - **🧩 Starter templates** — instant ready-made Web games (Snake · Pong · Flappy), no AI / no wait, then edit or refine
             - **🎓 Guided tour** — a first-run coach-mark tour walks you through connect → engine → prompt → generate → play (replay anytime with **🎓 Tour**); friendlier empty screen with one-tap examples
             - **Web games play instantly** in-app with **▶ Play preview** — no engine, no install (procedural art + Web Audio sound)

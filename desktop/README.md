@@ -33,6 +33,15 @@ stop you:
 
 ### What's new
 
+- **💬 Ask AI (chat mode)** — besides generating games, you can now **talk to a
+  built-in AI assistant** that replies in plain text: brainstorm game ideas, get
+  coding help, or ask how to use the app. Toggle **✦ Make a game / 💬 Ask AI** in
+  the composer; it answers **in your language** (Turkish, English, …), renders
+  code blocks, and each chat is saved like any other conversation. It uses the
+  same free stack — so with **Ollama** it's **unlimited, no key, no credits**.
+- **♾️ Ollama shown as truly unlimited** — when Ollama is the active provider the
+  header now reads **“Connected · Ollama · ♾️ Unlimited”**. The desktop app has
+  **no credits and no limits** — Ollama runs on your own PC, offline, free.
 - **🎓 Guided tour + friendlier start** — the first time you open the app a short
   **coach-mark tour** spotlights each step (connect → pick an engine → describe a
   game → generate → play); replay it anytime from **🎓 Tour** in the title bar. The

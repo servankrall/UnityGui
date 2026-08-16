@@ -158,6 +158,19 @@ textarea{resize:vertical;min-height:96px;line-height:1.5}
 
 .composer{margin-top:10px}
 .composer textarea{min-height:70px}
+
+/* mode switch: ✦ Make a game  |  💬 Ask AI */
+.mode-switch{display:inline-flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rp);padding:3px;margin-bottom:8px}
+.mode-btn{background:none;border:0;color:var(--muted);cursor:pointer;font-size:.82rem;font-weight:600;padding:.35rem .85rem;border-radius:var(--rp)}
+.mode-btn.on{background:var(--grad);color:#0a0d14}
+.mode-btn:disabled{cursor:default}
+#mode-switch.locked .mode-btn:not(.on){display:none}
+
+/* AI chat reply bubble */
+.chat-ai{white-space:normal;line-height:1.55}
+.chat-ai code{font-family:"Cascadia Code",ui-monospace,monospace;font-size:.85em;background:var(--surface3);color:var(--violet2);padding:.05rem .3rem;border-radius:5px}
+.chat-code{margin:.5rem 0;padding:.7rem .85rem;background:#0b0f18;border:1px solid var(--border-soft);border-radius:8px;color:#cbd5e6;font-family:"Cascadia Code",ui-monospace,monospace;font-size:.78rem;line-height:1.5;overflow:auto;white-space:pre}
+.turns-empty .art.chat{color:var(--cyan);box-shadow:0 0 30px rgba(34,211,238,.3)}
 .composer-row{display:flex;align-items:center;gap:10px;margin-top:8px}
 .composer-row .spacer{flex:1}
 

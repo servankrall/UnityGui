@@ -443,6 +443,28 @@ test("templates: catalog is well-formed self-contained web games", () => {
   assert.strictEqual(templates.byId("nope"), null);
 });
 
+// ---- AI chat (Ask AI mode) -------------------------------------------------
+test("prompts.buildChatPrompt: folds history + new message into a transcript", () => {
+  const turns = [
+    { prompt: "hi", result: { assistant: true, text: "hello there" } },
+    { prompt: "ideas?", result: { assistant: true, text: "a snake game" } },
+  ];
+  const p = prompts.buildChatPrompt(turns, "one more?");
+  assert.ok(p.includes("User: hi"), "includes prior user turn");
+  assert.ok(p.includes("Assistant: hello there"), "includes prior assistant reply");
+  assert.ok(p.includes("User: one more?"), "includes the new message");
+  assert.ok(p.trim().endsWith("Assistant:"), "ends primed for the assistant");
+  // empty history → just the message, still primed
+  const p0 = prompts.buildChatPrompt([], "hey");
+  assert.ok(p0.startsWith("User: hey"), "no leading blank history");
+  assert.ok(p0.trim().endsWith("Assistant:"));
+});
+test("prompts.CHAT_SYSTEM: keeps replies conversational + same-language", () => {
+  const s = prompts.CHAT_SYSTEM.toLowerCase();
+  assert.ok(/same language/.test(s), "instructs to match the user's language");
+  assert.ok(!/json/.test(s), "not a JSON/game prompt");
+});
+
 // ---- project tags (collections) --------------------------------------------
 test("tags.sanitizeTags: trims, lowercases, dedupes, caps", () => {
   // from a comma string, with junk + casing + dupes + spacing
