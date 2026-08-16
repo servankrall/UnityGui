@@ -87,12 +87,34 @@ function callOne(provider, apiKey, model, system, prompt, jsonMode, maxTokens, i
   return Promise.reject(new Error("Unknown provider: " + provider));
 }
 
+// For Ollama, the model tags that are actually installed vary per machine — so
+// never guess. Ask the local server which models exist and try THOSE (preferring
+// the requested one, or one with the same base name). This fixes the common
+// "model 'x' not found (404)" error from hard-coded tags that aren't pulled.
+async function ollamaCandidateModels(preferred, host) {
+  const st = await ollamaStatus(host);
+  if (!st.running) throw new Error("Ollama isn't running. Install it from ollama.com, start it, then run:  ollama pull qwen2.5-coder");
+  const installed = (st.models || []).slice();
+  if (!installed.length) throw new Error("No Ollama models are installed yet. Run one of:  ollama pull qwen2.5-coder   ·   ollama pull llama3.2");
+  const base = (m) => String(m || "").split(":")[0];
+  if (preferred) {
+    const pick = installed.find(m => m === preferred) || installed.find(m => base(m) === base(preferred));
+    if (pick) return [pick, ...installed.filter(m => m !== pick)];
+  }
+  return installed;
+}
+
 // ---- Public: call with automatic model fallback ----------------------------
 // Returns { text, model, finishReason } where `model` is whichever worked.
 async function callLLM(provider, apiKey, model, system, prompt, jsonMode, maxTokens, images) {
-  const listed = (PROVIDERS[provider] && PROVIDERS[provider].models) || [];
-  const primary = model || (PROVIDERS[provider] && PROVIDERS[provider].defaultModel);
-  const candidates = [primary, ...listed.filter(m => m && m !== primary)];
+  let candidates;
+  if (provider === "ollama") {
+    candidates = await ollamaCandidateModels(model); // only models that are actually installed
+  } else {
+    const listed = (PROVIDERS[provider] && PROVIDERS[provider].models) || [];
+    const primary = model || (PROVIDERS[provider] && PROVIDERS[provider].defaultModel);
+    candidates = [primary, ...listed.filter(m => m && m !== primary)];
+  }
   const tried = [];
   let lastErr;
   for (const m of candidates) {
@@ -147,7 +169,13 @@ function buildCandidates(cfg) {
   const out = [];
   for (const p of order) {
     const prov = PROVIDERS[p];
-    if (!prov.needsKey) { out.push({ provider: p, apiKey: "", model: prov.defaultModel }); continue; }
+    if (!prov.needsKey) {
+      // No-key providers (Ollama): prefer the user's chosen model; callLLM then
+      // maps it to whatever is actually installed.
+      const model = (p === active && cfg.model) ? cfg.model : prov.defaultModel;
+      out.push({ provider: p, apiKey: "", model });
+      continue;
+    }
     keyList(cfg, p).forEach((k, i) => {
       const model = (p === active && i === 0 && cfg.model) ? cfg.model : prov.defaultModel;
       out.push({ provider: p, apiKey: k, model });
@@ -253,7 +281,7 @@ function parseResult(text) {
 
 module.exports = {
   httpJson, apiError, isModelUnavailable, isRateLimited, isTruncated,
-  callGemini, callGroq, callOllama, callOne, callLLM,
+  callGemini, callGroq, callOllama, callOne, callLLM, ollamaCandidateModels,
   keyList, buildCandidates, generateResilient, ollamaStatus,
   stripFences, parseResult, extractBalanced, closeTruncated,
 };

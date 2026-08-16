@@ -173,19 +173,42 @@ const CHAT_SYSTEM =
   "Be concise and practical — short paragraphs, and simple bullet lists or fenced ``` code blocks only when they help. " +
   "IMPORTANT: reply in the SAME LANGUAGE the user writes in (for example, answer Turkish in Turkish).";
 
+// The most recent turn in a conversation that actually produced a game.
+function latestGame(turns) {
+  return [...(turns || [])].reverse().find(t => t && t.result && Array.isArray(t.result.files) && t.result.files.length) || null;
+}
+
 // Fold the recent conversation + the new message into a single transcript prompt
-// (our provider client sends one system + one user message).
+// (our provider client sends one system + one user message). Game-building turns
+// are represented so the assistant knows what it already made in THIS thread.
 function buildChatPrompt(turns, message) {
   const hist = (turns || []).slice(-8).map(t => {
-    const a = t.result && t.result.text ? t.result.text : "";
+    const d = t.result || {};
+    const a = d.assistant
+      ? (d.text || "")
+      : (Array.isArray(d.files) ? ("[Built the " + (d.engine || "") + " game \"" + (d.game_name || "game") + "\": " + (d.summary || "") + "]") : "");
     return "User: " + t.prompt + "\nAssistant: " + a;
   }).join("\n\n");
   return (hist ? hist + "\n\n" : "") + "User: " + message + "\nAssistant:";
+}
+
+// Extra system context so the assistant KNOWS about the game already built in this
+// same conversation (its name, engine, files) and can discuss or change it.
+function buildChatContext(convo) {
+  const g = latestGame(convo && convo.turns);
+  if (!g) return "";
+  const d = g.result;
+  const files = (d.files || []).map(f => "- " + (f.path || f.name || "file")).join("\n");
+  return "\n\nCONTEXT — In THIS conversation you already generated a game (the user can Play it from this same chat). " +
+    "You know it and can answer questions about it or, if the user asks for changes, tell them to keep chatting to update it.\n" +
+    "Game: \"" + (d.game_name || "game") + "\" · engine: " + (d.engine || "?") + "\n" +
+    (d.summary ? "Summary: " + d.summary + "\n" : "") +
+    (files ? "Files:\n" + files : "");
 }
 
 module.exports = {
   styleLine, GENRES, genresFor, MODIFIERS,
   buildSystemPrompt, buildRefinePrompt, buildFixPrompt, buildAssetHint,
   ENHANCE_SYSTEM, buildEnhancePrompt,
-  CHAT_SYSTEM, buildChatPrompt,
+  CHAT_SYSTEM, buildChatPrompt, buildChatContext, latestGame,
 };

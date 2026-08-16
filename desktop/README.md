@@ -33,15 +33,20 @@ stop you:
 
 ### What's new
 
-- **💬 Ask AI (chat mode)** — besides generating games, you can now **talk to a
-  built-in AI assistant** that replies in plain text: brainstorm game ideas, get
-  coding help, or ask how to use the app. Toggle **✦ Make a game / 💬 Ask AI** in
-  the composer; it answers **in your language** (Turkish, English, …), renders
-  code blocks, and each chat is saved like any other conversation. It uses the
-  same free stack — so with **Ollama** it's **unlimited, no key, no credits**.
+- **💬 One conversation for chat *and* games** — the AI can now both **answer you
+  in plain text** and **build the game** in the **same thread**. Toggle **✦ Make a
+  game / 💬 Ask AI** anytime (no locked "tabs"): describe a game and it writes the
+  files, then switch to Ask AI and it **knows what it just made** — ask "what did
+  you make?" or "how do I make it harder?" and it answers about *your* game. It
+  replies **in your language** (Turkish, English, …) and renders code blocks.
+- **🛠️ Fixed the Ollama "model not found (404)" error** — the app no longer tries
+  hard-coded model tags that aren't on your machine (e.g.
+  *`deepseek-coder-v2:16b` not found*). It now asks Ollama which models are
+  **actually installed** and uses one of those (preferring the one you picked), or
+  shows a clear **"run `ollama pull qwen2.5-coder`"** message if none are.
 - **♾️ Ollama shown as truly unlimited** — when Ollama is the active provider the
-  header now reads **“Connected · Ollama · ♾️ Unlimited”**. The desktop app has
-  **no credits and no limits** — Ollama runs on your own PC, offline, free.
+  header reads **“Connected · Ollama · ♾️ Unlimited”**. The desktop app has **no
+  credits and no limits** — Ollama runs on your own PC, offline, free.
 - **🎓 Guided tour + friendlier start** — the first time you open the app a short
   **coach-mark tour** spotlights each step (connect → pick an engine → describe a
   game → generate → play); replay it anytime from **🎓 Tour** in the title bar. The
