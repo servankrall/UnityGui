@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.22)"
+        description: "Release tag to publish (e.g. v1.0.23)"
         required: true
-        default: "v1.0.22"
+        default: "v1.0.23"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -52,11 +52,13 @@ jobs:
             **UnityGUI desktop app** — generate complete **Unity, Roblox Studio _and_ Web (HTML5)**
             games from a prompt, for free.
 
-            Download `UnityGUI-Setup-*.exe` below and run it (one-click install). Connect a free
-            AI provider (Gemini / Groq / Ollama), pick an engine, and describe a game — with
+            Download `UnityGUI-Setup-*.exe` below and run it (one-click install). It works
+            **out of the box** — the default **Free AI** needs **no key and no setup**, and it's
+            a capable hosted model (not a weak local one). Pick an engine, describe a game — with
             **Auto-open** on it writes the project and opens it in the engine for you. Keep
             **chatting** to refine the game. You just press Play.
 
+            - **🆓 Works with zero setup** — a **free, no-key, capable hosted AI** is the default; just open the app and start (no sign-up, no key, nothing to install). Prefer your own? Gemini / Groq (free key) or Ollama (offline) still work.
             - **Three engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file · Web (HTML5/JS) → one `index.html`
             - **Opens straight in Unity** — the app launches the Unity Editor on the generated project (no Hub "Add" step)
             - **🎨 Asset pack** — attach photos or generate **multiple** free AI images (no key), name each (player/enemy/background); each is embedded as a real asset (Web sprite / Unity texture)

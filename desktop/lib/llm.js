@@ -28,7 +28,7 @@ function isModelUnavailable(msg, status) {
 
 // ---- Single-model calls ----------------------------------------------------
 // Per-provider ceilings on output tokens (avoids API errors on huge requests).
-const OUTPUT_CAP = { gemini: 60000, groq: 32000, ollama: 32000 };
+const OUTPUT_CAP = { gemini: 60000, groq: 32000, ollama: 32000, pollinations: 16000 };
 
 async function callGemini(apiKey, model, system, prompt, jsonMode, maxTokens, images) {
   maxTokens = Math.min(maxTokens, OUTPUT_CAP.gemini);
@@ -80,10 +80,33 @@ async function callOllama(model, system, prompt, jsonMode, maxTokens) {
   return { text, finishReason: j.done_reason || (j.done === false ? "length" : null) };
 }
 
+// Free, hosted, no-key AI (Pollinations) — OpenAI-compatible chat endpoint.
+async function callPollinations(model, system, prompt, jsonMode, maxTokens) {
+  maxTokens = Math.min(maxTokens, OUTPUT_CAP.pollinations);
+  const body = {
+    model: model || "openai",
+    messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
+    max_tokens: maxTokens, temperature: 0.8, referrer: "unitygui", private: true,
+  };
+  if (jsonMode) body.response_format = { type: "json_object" };
+  const { ok, status, raw } = await httpJson("https://text.pollinations.ai/openai", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+  });
+  if (!ok) { const e = new Error(apiError(raw, status, "Free AI")); e.status = status; throw e; }
+  let j;
+  try { j = JSON.parse(raw); }
+  catch { if (raw && raw.trim()) return { text: raw, finishReason: null }; throw new Error("Could not parse the Free AI response."); }
+  const choice = j.choices && j.choices[0];
+  const text = choice && choice.message ? choice.message.content : (typeof j === "string" ? j : "");
+  if (!text) throw new Error("The Free AI returned no text. Try again, or pick another provider.");
+  return { text, finishReason: choice && choice.finish_reason };
+}
+
 function callOne(provider, apiKey, model, system, prompt, jsonMode, maxTokens, images) {
   if (provider === "gemini") return callGemini(apiKey, model, system, prompt, jsonMode, maxTokens, images);
   if (provider === "groq") return callGroq(apiKey, model, system, prompt, jsonMode, maxTokens);
   if (provider === "ollama") return callOllama(model, system, prompt, jsonMode, maxTokens);
+  if (provider === "pollinations") return callPollinations(model, system, prompt, jsonMode, maxTokens);
   return Promise.reject(new Error("Unknown provider: " + provider));
 }
 
@@ -329,7 +352,7 @@ function coerceFiles(d, engine) {
 
 module.exports = {
   httpJson, apiError, isModelUnavailable, isRateLimited, isTruncated,
-  callGemini, callGroq, callOllama, callOne, callLLM, ollamaCandidateModels,
+  callGemini, callGroq, callOllama, callPollinations, callOne, callLLM, ollamaCandidateModels,
   keyList, buildCandidates, generateResilient, ollamaStatus,
   stripFences, parseResult, extractBalanced, closeTruncated, coerceFiles,
 };

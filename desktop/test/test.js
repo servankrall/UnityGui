@@ -273,6 +273,40 @@ test("callLLM: does NOT fall back on an auth error (fails fast)", async () => {
   assert.strictEqual(calls.length, 1, "auth error tried exactly one model");
 });
 
+// ---- Free hosted AI (Pollinations, no key) ---------------------------------
+test("providers: default is the free no-key hosted AI (recommended)", () => {
+  assert.ok(PROVIDERS.pollinations, "pollinations provider exists");
+  assert.strictEqual(PROVIDERS.pollinations.needsKey, false, "no key needed");
+  assert.ok(PROVIDERS.pollinations.hosted, "flagged as a hosted (cloud) no-key provider");
+  assert.strictEqual(Object.keys(PROVIDERS)[0], "pollinations", "listed first (the default)");
+  // ollama stays last so it remains the fallback-of-last-resort in buildCandidates
+  const keys = Object.keys(PROVIDERS);
+  assert.strictEqual(keys[keys.length - 1], "ollama");
+});
+test("callPollinations: posts OpenAI-shape, reads the reply (no key, jsonMode)", async () => {
+  let seen = null;
+  global.fetch = async (url, opt) => {
+    seen = { url: String(url), body: JSON.parse(opt.body), auth: opt.headers && opt.headers.authorization };
+    return mockRes(true, 200, JSON.stringify({ choices: [{ message: { content: "GAME_JSON" }, finish_reason: "stop" }] }));
+  };
+  const r = await llm.callPollinations("openai", "sys", "make snake", true, 4000);
+  assert.strictEqual(r.text, "GAME_JSON");
+  assert.ok(seen.url.includes("text.pollinations.ai"), "hits the free endpoint");
+  assert.strictEqual(seen.auth, undefined, "sends NO auth header (no key)");
+  assert.strictEqual(seen.body.response_format.type, "json_object", "asks for JSON in game mode");
+});
+test("callPollinations: tolerates a plain-text (non-JSON) body", async () => {
+  global.fetch = async () => mockRes(true, 200, "just some plain text reply");
+  const r = await llm.callPollinations("openai", "sys", "hi", false, 100);
+  assert.strictEqual(r.text, "just some plain text reply");
+});
+test("buildCandidates: free hosted AI is tried, Ollama still last", () => {
+  const cfg = { provider: "pollinations", model: "openai", keys: {} };
+  const cands = llm.buildCandidates(cfg);
+  assert.strictEqual(cands[0].provider, "pollinations", "the no-key default is first");
+  assert.strictEqual(cands[cands.length - 1].provider, "ollama", "ollama remains last resort");
+});
+
 // ---- rate-limit detection + resilient fallback -----------------------------
 test("isRateLimited: recognises 429 / quota / exhausted", () => {
   assert.ok(llm.isRateLimited("anything", 429));

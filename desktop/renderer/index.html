@@ -23,7 +23,7 @@
       <div class="card">
         <span class="badge">● Free — no paid Claude key needed</span>
         <h1>Connect an AI provider</h1>
-        <p class="sub">Pick a free provider and paste its key(s). Tired of limits? Paste <b>several keys</b> (one per line) and the app auto-rotates — and if one provider runs out it falls back to the others (and to Ollama, which is unlimited & needs no key). Keys stay on this computer.</p>
+        <p class="sub">The default <b>Free AI</b> needs <b>no key and no setup</b> — just press <b>Connect</b> and start. It's a capable hosted model (not a weak local one), so chat and game generation actually work. Prefer your own key? Pick <b>Gemini</b>/<b>Groq</b> (free key) or <b>Ollama</b> (offline). Keys stay on this computer.</p>
 
         <label for="provider">Provider</label>
         <select id="provider"></select>
@@ -36,6 +36,7 @@
 
         <label class="mt2" for="c-model">Model</label>
         <select id="c-model"></select>
+        <div class="hint" id="provider-note"></div>
 
         <div id="ollama-help" class="hidden">
           <button class="btn btn-ghost btn-block mt" id="ollama-check">🔌 Check Ollama status</button>

@@ -33,6 +33,11 @@ stop you:
 
 ### What's new
 
+- **🆓 Works out of the box — a free, no-key, *capable* AI is the default.** No more
+  fighting a weak local model that "says empty things" or can't build a game: the
+  app now ships with a **free hosted AI** (GPT-class) as the default provider —
+  **no key, no sign-up, nothing to install**. Just open the app and start. (You can
+  still switch to your own **Gemini**/**Groq** key or offline **Ollama** anytime.)
 - **💬 One conversation for chat *and* games** — the AI can now both **answer you
   in plain text** and **build the game** in the **same thread**. Toggle **✦ Make a
   game / 💬 Ask AI** anytime (no locked "tabs"): describe a game and it writes the
@@ -125,9 +130,16 @@ stop you:
 
 | Provider | Cost | Get started |
 |---|---|---|
+| **Free AI (default)** | **Free, hosted, no key, no sign-up** | Nothing to do — it's the default. Just press **Connect**. |
 | **Google Gemini** | Free tier, no credit card | Free key at [aistudio.google.com](https://aistudio.google.com/app/apikey) |
 | **Groq** | Free, very fast | Free key at [console.groq.com](https://console.groq.com/keys) |
 | **Ollama** | 100% free, offline, **unlimited, no key** | Install [ollama.com](https://ollama.com/download), then `ollama pull qwen2.5-coder` |
+
+> The default **Free AI** is a capable **hosted** model (works without any key), so
+> chat and game generation actually work with zero setup. It's different from
+> **Ollama**, which runs *locally* on your PC (great for offline/unlimited, but small
+> local models can be weak). If a game ever fails to generate, switch provider or
+> add a free Gemini key.
 
 ## Get it (Releases)
 
