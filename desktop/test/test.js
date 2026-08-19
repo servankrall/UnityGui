@@ -300,6 +300,21 @@ test("callPollinations: tolerates a plain-text (non-JSON) body", async () => {
   const r = await llm.callPollinations("openai", "sys", "hi", false, 100);
   assert.strictEqual(r.text, "just some plain text reply");
 });
+test("callPollinations: falls back to the GET endpoint when POST fails", async () => {
+  const methods = [];
+  global.fetch = async (url, opt) => {
+    methods.push((opt && opt.method) || "GET");
+    if (String(url).includes("/openai")) return mockRes(false, 500, "server error"); // POST down
+    return mockRes(true, 200, "PLAINTEXT_GAME"); // GET works
+  };
+  const r = await llm.callPollinations("openai", "sys", "short prompt", false, 4000);
+  assert.strictEqual(r.text, "PLAINTEXT_GAME");
+  assert.ok(methods.includes("POST") && methods.includes("GET"), "tried POST then GET");
+});
+test("callPollinations: throws a recoverable error when both paths fail", async () => {
+  global.fetch = async () => mockRes(false, 502, "bad gateway");
+  await assert.rejects(() => llm.callPollinations("openai", "sys", "short", false, 100), /Free AI/);
+});
 test("buildCandidates: free hosted AI is tried, Ollama still last", () => {
   const cfg = { provider: "pollinations", model: "openai", keys: {} };
   const cands = llm.buildCandidates(cfg);

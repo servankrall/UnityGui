@@ -350,12 +350,14 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
     }
 
     if (badFiles(data)) {
-      const usedOllama = r && r.provider === "ollama";
+      const used = r && r.provider;
       return { ok: false, error: (isTruncated(r.finishReason) || parseErr)
         ? "The game was too big and got cut off before it finished. Try a shorter description, set Length to Max, or switch model/provider."
-        : usedOllama
-          ? "Your local Ollama model couldn't produce a full game in the required format. Try a stronger model (e.g. `ollama pull qwen2.5-coder:7b`, or a 14b/32b), pick the Web engine (it's the simplest), or add a free Gemini/Groq key for generating games."
-          : "The model returned no usable files. Try again, shorten the description, or pick another model/provider." };
+        : used === "ollama"
+          ? "Your local Ollama model couldn't produce a full game in the required format. Try a stronger model (e.g. `ollama pull qwen2.5-coder:7b`, or a 14b/32b), pick the Web engine (it's the simplest), or add a free Gemini/Groq key."
+          : used === "pollinations"
+            ? "The free AI didn't return a usable game this time. Try again (it varies), pick the Web engine (it's the simplest), or add a free Gemini key (aistudio.google.com/app/apikey) for the most reliable results."
+            : "The model returned no usable files. Try again, shorten the description, or pick another model/provider." };
     }
 
     const usedProvider = r.provider, usedModel = r.model;

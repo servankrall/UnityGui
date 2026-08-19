@@ -80,26 +80,48 @@ async function callOllama(model, system, prompt, jsonMode, maxTokens) {
   return { text, finishReason: j.done_reason || (j.done === false ? "length" : null) };
 }
 
-// Free, hosted, no-key AI (Pollinations) — OpenAI-compatible chat endpoint.
+// Free, hosted, no-key AI (Pollinations). Tries the OpenAI-compatible POST first,
+// then falls back to the simple GET text endpoint for short prompts — so a change
+// in one path doesn't break generation. Any failure throws (recoverable): the
+// resilient layer then moves on to the next provider.
 async function callPollinations(model, system, prompt, jsonMode, maxTokens) {
   maxTokens = Math.min(maxTokens, OUTPUT_CAP.pollinations);
-  const body = {
-    model: model || "openai",
-    messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
-    max_tokens: maxTokens, temperature: 0.8, referrer: "unitygui", private: true,
-  };
-  if (jsonMode) body.response_format = { type: "json_object" };
-  const { ok, status, raw } = await httpJson("https://text.pollinations.ai/openai", {
-    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
-  });
-  if (!ok) { const e = new Error(apiError(raw, status, "Free AI")); e.status = status; throw e; }
-  let j;
-  try { j = JSON.parse(raw); }
-  catch { if (raw && raw.trim()) return { text: raw, finishReason: null }; throw new Error("Could not parse the Free AI response."); }
-  const choice = j.choices && j.choices[0];
-  const text = choice && choice.message ? choice.message.content : (typeof j === "string" ? j : "");
-  if (!text) throw new Error("The Free AI returned no text. Try again, or pick another provider.");
-  return { text, finishReason: choice && choice.finish_reason };
+  let postErr = null;
+  // Strategy 1 — OpenAI-compatible POST (handles long prompts, e.g. refine).
+  try {
+    const body = {
+      model: model || "openai",
+      messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
+      max_tokens: maxTokens, temperature: 0.8, referrer: "unitygui",
+    };
+    if (jsonMode) body.response_format = { type: "json_object" };
+    const { ok, status, raw } = await httpJson("https://text.pollinations.ai/openai", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+    if (ok) {
+      let j = null; try { j = JSON.parse(raw); } catch {}
+      const content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+      if (content) return { text: content, finishReason: j.choices[0].finish_reason };
+      if (!j && raw && raw.trim()) return { text: raw, finishReason: null }; // plain-text body
+      postErr = new Error("The Free AI returned no text.");
+    } else {
+      postErr = Object.assign(new Error(apiError(raw, status, "Free AI")), { status });
+    }
+  } catch (e) { postErr = e; }
+
+  // Strategy 2 — plain GET text endpoint (only when the URL stays short enough).
+  const payload = (system ? system + "\n\n" : "") + prompt;
+  if (payload.length < 6000) {
+    try {
+      const q = new URLSearchParams({ model: model || "openai", referrer: "unitygui" });
+      if (jsonMode) q.set("json", "true");
+      const url = "https://text.pollinations.ai/" + encodeURIComponent(payload) + "?" + q.toString();
+      const { ok, status, raw } = await httpJson(url, { method: "GET" });
+      if (ok && raw && raw.trim()) return { text: raw, finishReason: null };
+      if (!ok && !postErr) postErr = Object.assign(new Error(apiError(raw, status, "Free AI")), { status });
+    } catch (e) { if (!postErr) postErr = e; }
+  }
+  throw postErr || new Error("The Free AI didn't respond. Try again, or add a free Gemini key / use Ollama.");
 }
 
 function callOne(provider, apiKey, model, system, prompt, jsonMode, maxTokens, images) {
@@ -240,8 +262,8 @@ async function generateResilient(cfg, system, prompt, jsonMode, maxTokens, opts 
   }
   const providers = [...new Set(cands.map(c => c.provider))].join(", ");
   throw new Error(
-    `All options failed (tried: ${providers}). ${errs.slice(0, 4).join(" | ")}` +
-    ` — tip: install Ollama (ollama.com) to generate 100% free & unlimited with no key/limits.`,
+    `Couldn't reach any AI right now (tried: ${providers}). ${errs.slice(0, 3).join(" | ")}` +
+    ` — tip: check your internet, or add a free Gemini key (aistudio.google.com/app/apikey — no card) or install Ollama (ollama.com), then try again.`,
   );
 }
 
