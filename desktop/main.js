@@ -19,6 +19,7 @@ const art = require("./lib/art");
 const staticServer = require("./lib/server");
 const templates = require("./lib/templates");
 const { sanitizeTags } = require("./lib/tags");
+const { isBlankImage } = require("./lib/qa");
 
 const CONFIG_PATH = () => path.join(app.getPath("userData"), "config.json");
 const CONVOS_PATH = () => path.join(app.getPath("userData"), "conversations.json");
@@ -111,6 +112,40 @@ function thumbToDataUrl(pngPath) {
   try { const b = fs.readFileSync(pngPath); return "data:image/png;base64," + b.toString("base64"); } catch { return null; }
 }
 
+// Run a Web game off-screen and collect runtime/console errors + a blank-screen
+// signal. Shared by the manual "Check & fix" and the automatic post-gen QA.
+function runWebCheck(filePath, { timeoutMs = 3500 } = {}) {
+  return new Promise((resolve) => {
+    let done = false, win = null;
+    const errors = [];
+    const finish = async (checkBlank) => {
+      if (done) return;
+      if (checkBlank && win && !win.isDestroyed() && !errors.length) {
+        try { const img = await win.webContents.capturePage(); if (isBlankImage(img)) errors.push("The game renders a blank/empty screen — nothing is drawn. Create and size the <canvas>, draw the first frame immediately, and keep the requestAnimationFrame loop running. Don't block the game behind a click/key that leaves the canvas empty."); } catch {}
+      }
+      done = true;
+      try { if (win && !win.isDestroyed()) win.destroy(); } catch {}
+      resolve({ ok: true, errors });
+    };
+    try {
+      if (!filePath || !fs.existsSync(filePath)) return resolve({ ok: false, error: "Nothing to check yet." });
+      win = new BrowserWindow({ show: false, width: 640, height: 480, webPreferences: { offscreen: true, nodeIntegration: false, contextIsolation: true, sandbox: true } });
+      const onConsole = (...args) => {
+        let level, message;
+        if (args[1] && typeof args[1] === "object") { level = args[1].level; message = args[1].message; }
+        else { level = args[1]; message = args[2]; }
+        const isErr = level === 3 || level === "error";
+        if (isErr && message) { const m = String(message).trim(); if (m && !errors.includes(m)) errors.push(m.slice(0, 400)); }
+      };
+      win.webContents.on("console-message", onConsole);
+      win.webContents.on("render-process-gone", () => { errors.push("The game crashed (renderer process gone)."); finish(false); });
+      win.webContents.once("did-fail-load", (_e2, code, desc) => { if (code !== -3) errors.push("Failed to load: " + (desc || code)); });
+      win.loadFile(filePath);
+      setTimeout(() => finish(true), timeoutMs); // let it boot + run, then blank-check
+    } catch (e) { resolve({ ok: false, error: e.message }); }
+  });
+}
+
 // ---- Window ----------------------------------------------------------------
 function createWindow() {
   const win = new BrowserWindow({
@@ -135,6 +170,7 @@ ipcMain.handle("config:get", () => {
   return {
     provider: c.provider, connected: isConnected(c), model: c.model, engine: c.engine,
     style: c.style, autoOpen: c.autoOpen, maxTokens: c.maxTokens || 20000,
+    autoFix: c.autoFix !== false,
     keyCount: keyList(c, c.provider).length, ready: readyProviders(c),
     tourConnect: !!c.tourConnect, tourApp: !!c.tourApp,
   };
@@ -146,6 +182,7 @@ ipcMain.handle("config:save", (_e, patch) => {
   if (patch.engine && ENGINES[patch.engine]) c.engine = patch.engine;
   if (patch.style) c.style = patch.style;
   if (typeof patch.autoOpen === "boolean") c.autoOpen = patch.autoOpen;
+  if (typeof patch.autoFix === "boolean") c.autoFix = patch.autoFix;
   if (typeof patch.tourConnect === "boolean") c.tourConnect = patch.tourConnect;
   if (typeof patch.tourApp === "boolean") c.tourApp = patch.tourApp;
   if (Number.isFinite(patch.maxTokens)) c.maxTokens = Math.max(2000, Math.min(60000, patch.maxTokens));
@@ -380,10 +417,10 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
     upsertConvo(convo);
 
     // auto-save + auto-open if enabled
+    const imgOpt = assets.length ? { images: assets.map(a => ({ name: a.name, base64: a.base64 })) } : {};
     let saved = null;
     if (c.autoOpen) {
       try {
-        const imgOpt = assets.length ? { images: assets.map(a => ({ name: a.name, base64: a.base64 })) } : {};
         saved = writers.writeProject(engine, DEFAULT_OUT(), data, imgOpt);
         if (engine === "unity") {
           // Open the project straight in the Unity Editor — no Hub "Add" step.
@@ -391,6 +428,30 @@ ipcMain.handle("generate", async (_e, { prompt, conversationId, regenerate, imag
           if (u.ok) { saved.launched = "unity"; saved.unityExe = u.exe; }
           else { shell.openPath(saved.root); saved.launched = "folder"; saved.needsUnity = !!u.needsUnity; }
         } else {
+          // Web games: auto-QA — run the game headless; if it errors or renders
+          // blank, let the AI fix it ONCE (silently) so the user gets a game that
+          // actually works, then open the fixed version.
+          if (engine === "web" && saved.root && c.autoFix !== false) {
+            try {
+              const check = await runWebCheck(saved.openTarget);
+              if (check.ok && check.errors && check.errors.length) {
+                const fixUser = prompts.buildRefinePrompt(data, prompts.buildFixPrompt(check.errors));
+                const rr = await generateResilient(c, system, fixUser, true, Math.max(budget, 24000), {});
+                let d2 = null; try { d2 = parseResult(rr.text); } catch {}
+                if (d2 && badFiles(d2)) { const cf = coerceFiles(d2, engine); if (cf) d2 = cf; }
+                if (d2 && !badFiles(d2)) {
+                  d2.engine = engine;
+                  const saved2 = writers.writeProject(engine, DEFAULT_OUT(), d2, imgOpt);
+                  const recheck = await runWebCheck(saved2.openTarget);
+                  // Keep the fixed version only if it's at least as clean.
+                  if (recheck.ok && recheck.errors.length <= check.errors.length) {
+                    data = d2; convo.turns[convo.turns.length - 1].result = d2;
+                    saved = saved2; saved.autoFixed = true;
+                  }
+                }
+              }
+            } catch {}
+          }
           shell.openPath(saved.openTarget);
           // Web games: grab a thumbnail for the chat + library gallery (best-effort).
           if (engine === "web" && saved.root) {
@@ -525,28 +586,7 @@ ipcMain.handle("unity:pickExe", async () => {
 });
 
 // Run a Web game off-screen and collect runtime / console errors (auto QA).
-ipcMain.handle("web:check", (_e, filePath) => new Promise((resolve) => {
-  let done = false, win = null;
-  const errors = [];
-  const finish = () => { if (done) return; done = true; try { if (win && !win.isDestroyed()) win.destroy(); } catch {} resolve({ ok: true, errors }); };
-  try {
-    if (!filePath || !fs.existsSync(filePath)) return resolve({ ok: false, error: "Nothing to check yet." });
-    win = new BrowserWindow({ show: false, width: 640, height: 480, webPreferences: { offscreen: true, nodeIntegration: false, contextIsolation: true, sandbox: true } });
-    const onConsole = (...args) => {
-      // Electron <30: (event, level, message, …); newer: (event, {level, message})
-      let level, message;
-      if (args[1] && typeof args[1] === "object") { level = args[1].level; message = args[1].message; }
-      else { level = args[1]; message = args[2]; }
-      const isErr = level === 3 || level === "error";
-      if (isErr && message) { const m = String(message).trim(); if (m && !errors.includes(m)) errors.push(m.slice(0, 400)); }
-    };
-    win.webContents.on("console-message", onConsole);
-    win.webContents.on("render-process-gone", () => { errors.push("The game crashed (renderer process gone)."); finish(); });
-    win.webContents.once("did-fail-load", (_e2, code, desc) => { if (code !== -3) errors.push("Failed to load: " + (desc || code)); });
-    win.loadFile(filePath);
-    setTimeout(finish, 3200); // let the game boot + first frames run
-  } catch (e) { resolve({ ok: false, error: e.message }); }
-}));
+ipcMain.handle("web:check", (_e, filePath) => runWebCheck(filePath));
 
 // In-app playable preview (Web games): open the HTML in an isolated window.
 ipcMain.handle("preview:open", (_e, filePath) => {

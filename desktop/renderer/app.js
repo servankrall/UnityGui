@@ -93,6 +93,7 @@ async function init(){
   $("#style").value=cfg.style||"auto";
   $("#length").value=String(cfg.maxTokens||20000);
   $("#auto-open").checked=cfg.autoOpen!==false;
+  $("#auto-fix").checked=cfg.autoFix!==false;
   seenTours.connect=!!cfg.tourConnect; seenTours.app=!!cfg.tourApp;
   renderGenres();
   refreshConnectForm();
@@ -113,6 +114,7 @@ async function init(){
   $("#style").addEventListener("change",()=>window.api.saveConfig({style:$("#style").value}));
   $("#length").addEventListener("change",()=>window.api.saveConfig({maxTokens:+$("#length").value}));
   $("#auto-open").addEventListener("change",()=>window.api.saveConfig({autoOpen:$("#auto-open").checked}));
+  $("#auto-fix").addEventListener("change",()=>window.api.saveConfig({autoFix:$("#auto-fix").checked}));
   $("#new-chat").addEventListener("click",newChat);
   $("#library-btn").addEventListener("click",openLibrary);
   $("#lib-search").addEventListener("input",e=>{libQuery=e.target.value;renderLibrary();});
@@ -790,9 +792,10 @@ async function runGenerate(payload,busyMsg){
     activeProvider=r.usedProvider; showConnected(true,r.usedProvider);
     switched=" (switched to "+name+")"; toast("Switched to "+name+" ✓");
   }
+  const fixedNote=(r.saved&&r.saved.autoFixed)?" · 🔧 auto-fixed an issue":"";
   if(r.saved&&r.saved.launched==="unity"){ if(!switched)toast("Opening in Unity ✓"); setStatus($("#gen-status"),"Opening the project in Unity…"+switched,false); }
   else if(r.saved&&r.saved.needsUnity){ setStatus($("#gen-status"),"Generated. Unity wasn't found — click ▶ Open in Unity to locate it (one time).",true); }
-  else if(r.saved&&r.saved.openTarget){ if(!switched)toast("Generated & opened ✓"); setStatus($("#gen-status"),"Saved & opened: "+r.saved.openTarget+switched,false); }
+  else if(r.saved&&r.saved.openTarget){ if(!switched)toast(r.saved.autoFixed?"Generated, auto-fixed & opened ✓":"Generated & opened ✓"); setStatus($("#gen-status"),"Saved & opened: "+r.saved.openTarget+switched+fixedNote,false); }
   else if(r.saved&&r.saved.error){ setStatus($("#gen-status"),"Generated. Auto-open failed: "+r.saved.error,true); }
   else if(!switched){ toast("Generated ✓"); }
   return r;

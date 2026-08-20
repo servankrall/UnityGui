@@ -75,8 +75,10 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **In-app code editor** — read/copy any generated file and **edit it in-app**:
   for **Web** games Save **re-runs** the preview instantly; for **Unity** it writes
   back to the project (recompiles on focus). Plus **🔁 Regenerate** and **📦 Share `.zip`**.
-- **🔧 Auto QA (Check & fix)** — for Web games, run the game headless, catch
-  runtime/console errors, and let the AI **auto-fix them** in one click.
+- **🩺 Auto QA + auto-fix** — for Web games the app **runs the game the moment it's
+  generated**, catches runtime/console errors **and a blank/black screen**, and lets
+  the AI **fix it automatically** before it opens (toggle **Auto-fix errors**); you
+  can also re-run it anytime with **🔧 Check & fix**.
 - **📱 Play on phone** — for Web games, start a tiny local server and get a LAN
   URL so you can open and play the game on your phone (same Wi‑Fi).
 - **🆓 Works with zero setup** — the default **Free AI** is a **capable, hosted,
@@ -93,7 +95,7 @@ on it writes the project and opens it in the engine for you. You just press Play
 - **Electron app** (`desktop/`) — the provider is called in the main process (no CORS,
   your keys never leave your machine). Core logic is unit-tested (`npm test`).
 - **Auto-built for Windows** by [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml):
-  push a tag like `v1.0.23` (or run the workflow) and the installer is published to Releases.
+  push a tag like `v1.0.25` (or run the workflow) and the installer is published to Releases.
 
 Details: [`desktop/README.md`](./desktop/README.md).
 
