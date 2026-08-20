@@ -16,6 +16,7 @@ const art = require("../lib/art");
 const staticServer = require("../lib/server");
 const templates = require("../lib/templates");
 const { sanitizeTags } = require("../lib/tags");
+const { isBlankImage } = require("../lib/qa");
 const http = require("http");
 
 let passed = 0;
@@ -536,6 +537,23 @@ test("templates: catalog is well-formed self-contained web games", () => {
     assert.ok(!t.html.includes("http://") && !t.html.includes("https://"), "no external resources");
   }
   assert.strictEqual(templates.byId("nope"), null);
+});
+
+// ---- auto-QA: blank-screen detection ---------------------------------------
+test("qa.isBlankImage: flags a flat frame, passes a frame with real drawing", () => {
+  const W = 40, H = 30;
+  const fakeImg = (fill) => ({ getSize: () => ({ width: W, height: H }), toBitmap: () => fill() });
+  // a solid black frame (BGRA all 0) → blank
+  const black = () => Buffer.alloc(W * H * 4, 0);
+  assert.strictEqual(isBlankImage(fakeImg(black)), true, "solid frame is blank");
+  // a solid mid-grey frame → still blank (uniform)
+  const grey = () => Buffer.alloc(W * H * 4, 80);
+  assert.strictEqual(isBlankImage(fakeImg(grey)), true, "uniform colour is blank");
+  // a frame with varied pixels (a drawn game) → not blank
+  const drawn = () => { const b = Buffer.alloc(W * H * 4); for (let i = 0; i < b.length; i++) b[i] = (i * 37) % 256; return b; };
+  assert.strictEqual(isBlankImage(fakeImg(drawn)), false, "varied frame is not blank");
+  // zero-size / empty → treated as blank
+  assert.strictEqual(isBlankImage({ getSize: () => ({ width: 0, height: 0 }), toBitmap: () => Buffer.alloc(0) }), true);
 });
 
 // ---- AI chat (Ask AI mode) -------------------------------------------------

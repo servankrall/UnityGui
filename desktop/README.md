@@ -33,6 +33,14 @@ stop you:
 
 ### What's new
 
+- **🩺 Games that actually work — automatic QA + auto-fix.** The #1 complaint was
+  "the game runs broken" (black screen, nothing moves). Now, for Web games, the app
+  **runs the game headless the instant it's generated**, catches **runtime/console
+  errors _and_ a blank/black screen**, and lets the AI **fix it automatically** (one
+  silent pass) before opening it — keeping the fixed version only if it's cleaner.
+  The generation prompt is also hardened to **render the first frame immediately**,
+  keep the loop running, wire input on `window`, and run with **zero errors**. Turn
+  it off with the **Auto-fix errors** checkbox.
 - **🆓 Works out of the box — a free, no-key, *capable* AI is the default.** No more
   fighting a weak local model that "says empty things" or can't build a game: the
   app now ships with a **free hosted AI** (GPT-class) as the default provider —

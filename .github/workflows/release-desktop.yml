@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v1.0.24)"
+        description: "Release tag to publish (e.g. v1.0.25)"
         required: true
-        default: "v1.0.24"
+        default: "v1.0.25"
 
 permissions:
   contents: write   # needed to create the Release and upload the .exe
@@ -59,6 +59,7 @@ jobs:
             **chatting** to refine the game. You just press Play.
 
             - **🆓 Works with zero setup** — a **free, no-key, capable hosted AI** is the default; just open the app and start (no sign-up, no key, nothing to install). Prefer your own? Gemini / Groq (free key) or Ollama (offline) still work.
+            - **🩺 Auto-fix broken games** — for Web games the app now **runs the game the moment it's generated**, catches runtime errors **and a blank/black screen**, and lets the AI **fix it automatically** before it opens — so you get a game that actually works. Prompt hardened to always render immediately and run with zero errors. (Toggle **Auto-fix errors**.)
             - **More reliable Free AI** — the free provider now **tries two request paths** and **auto-falls back** to your other providers if it hiccups; clearer, actionable messages (add a free Gemini key / use Ollama) when the network is the problem
             - **Three engines:** Unity (C#) → full project · Roblox Studio (Luau) → `.rbxlx` place file · Web (HTML5/JS) → one `index.html`
             - **Opens straight in Unity** — the app launches the Unity Editor on the generated project (no Hub "Add" step)

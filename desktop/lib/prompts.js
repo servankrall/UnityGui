@@ -85,9 +85,13 @@ RULES
 - A single index.html with ALL CSS and JavaScript inline. Vanilla JS only (no frameworks, no external <script src>, no CDN links, no imported assets/fonts/images).
 - Render with an HTML5 <canvas> (or DOM for card/clicker games) sized to the window; a requestAnimationFrame game loop; keyboard/mouse/touch input.
 - ${styleLine(style)}
+- MUST RUN WITH ZERO ERRORS: the code must execute top-to-bottom with no ReferenceError/TypeError. Declare every variable/function BEFORE it's used. Get the canvas and 2D context after the DOM is ready. Never call a method on something that might be null.
+- MUST NOT BE BLANK: draw the FIRST frame immediately on load and keep the requestAnimationFrame loop running every frame. The gameplay must be visible right away — if you show a "press to start" overlay, still render the game world/board behind it. Do NOT block the game behind a click/key handler that leaves the canvas empty.
+- Size the canvas to the window and REDRAW on resize (handle window 'resize').
 - PROCEDURAL ART: draw ALL graphics in code (canvas shapes, gradients, paths) — no image files. Give it real visual polish (colors, gradients, simple particles/animation).
-- PROCEDURAL SOUND: synthesize sound effects with the Web Audio API (AudioContext oscillators/gain) — short beeps/blips for actions, and start audio on first user interaction. No audio files.
-- Include a start screen and a game-over/restart, an on-screen score/lives HUD, and win/lose logic. Complete, valid, runnable code — no TODOs or placeholders.
+- PROCEDURAL SOUND: synthesize sound effects with the Web Audio API (AudioContext oscillators/gain) — short beeps/blips for actions, and resume/create the AudioContext on the first user interaction (never at load, or it throws). No audio files.
+- Input: add keyboard listeners on window (not just canvas), and preventDefault on arrow keys/space so the page doesn't scroll. The game must respond to input immediately.
+- Include a start screen and a game-over/restart, an on-screen score/lives HUD, and win/lose logic. Complete, valid, runnable code — no TODOs, no placeholders, no "...".
 
 OUTPUT — respond with ONLY a single JSON object, no markdown or code fences, with EXACTLY these keys:
   "game_name": string,
