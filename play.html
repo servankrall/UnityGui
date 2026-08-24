@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0d14" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="UnityGUI" />
+  <title>UnityGUI — Make games on your phone</title>
+  <meta name="description" content="Describe a game and play it on your phone — free, no key, no install. A mobile web app that generates a playable HTML5 game from a prompt." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="assets/logo.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    :root{
+      --bg:#0a0d14; --elev:#0f1420; --surface:#141a28; --surface2:#1a2233; --surface3:#212b40;
+      --border:#263048; --border-soft:#1c2438; --text:#eaf0fb; --muted:#9aa6bd; --dim:#6b768e;
+      --violet:#7c5cff; --violet2:#a68bff; --cyan:#22d3ee; --ember:#ff7a45; --green:#34d399;
+      --grad:linear-gradient(135deg,#7c5cff,#22d3ee); --gradE:linear-gradient(135deg,#ff7a45,#ff4d8d);
+      --rp:999px; --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;height:100%;overscroll-behavior:none}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);
+      display:flex;flex-direction:column;height:100dvh;overflow:hidden;
+      padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    button,input,textarea,select{font-family:inherit}
+    .hidden{display:none!important}
+
+    /* top bar */
+    .top{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border-soft);flex-shrink:0}
+    .brand{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.3px;font-size:1.05rem}
+    .brand .dot{width:22px;height:22px;border-radius:7px;background:var(--grad)}
+    .brand span{color:var(--violet2)}
+    .top .spacer{flex:1}
+    .top .icon-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:.4rem .55rem;font-size:1rem;cursor:pointer}
+
+    /* scrollable main */
+    .wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 16px 28px}
+    .hero{text-align:center;margin:8px 0 18px}
+    .hero .badge{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--violet2);margin-bottom:8px}
+    .hero h1{font-size:1.55rem;line-height:1.2;margin:.1rem 0 .4rem;letter-spacing:-.02em}
+    .hero p{color:var(--muted);font-size:.92rem;margin:0}
+
+    textarea#prompt{width:100%;font-size:1rem;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;min-height:88px;line-height:1.5;resize:none}
+    textarea#prompt:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,92,255,.18)}
+
+    .chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none}
+    .chips::-webkit-scrollbar{display:none}
+    .chip{flex:0 0 auto;font-size:.82rem;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:var(--rp);padding:.45rem .8rem;cursor:pointer;white-space:nowrap}
+    .chip:active{background:rgba(124,92,255,.14);color:var(--text)}
+
+    .btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;font-weight:800;font-size:1rem;border:0;border-radius:var(--rp);padding:.95rem 1.2rem;cursor:pointer;margin-top:12px}
+    .btn-primary{background:var(--grad);color:#0a0d14;box-shadow:0 8px 30px rgba(124,92,255,.35)}
+    .btn-primary:disabled{opacity:.55}
+    .btn-ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text);box-shadow:none}
+
+    .status{font-size:.85rem;color:var(--muted);margin-top:12px;text-align:center;min-height:1.2em}
+    .status.err{color:#ff8a8a}
+    .spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* recent games */
+    .section-h{display:flex;align-items:center;justify-content:space-between;margin:26px 0 10px}
+    .section-h h2{font-size:.95rem;margin:0}
+    .section-h .link{background:none;border:0;color:var(--dim);font-size:.8rem;cursor:pointer}
+    .recent{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .card{background:var(--surface);border:1px solid var(--border-soft);border-radius:14px;padding:12px;cursor:pointer;position:relative;overflow:hidden}
+    .card:active{border-color:var(--violet)}
+    .card .emoji{font-size:1.7rem}
+    .card .cname{font-size:.86rem;font-weight:700;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .card .cmeta{font-size:.72rem;color:var(--dim);margin-top:2px}
+    .card .del{position:absolute;top:6px;right:6px;background:var(--surface3);border:0;color:var(--dim);width:26px;height:26px;border-radius:8px;font-size:.85rem;cursor:pointer}
+    .empty{grid-column:1/-1;color:var(--dim);font-size:.85rem;text-align:center;padding:16px}
+
+    /* PLAYER (full screen game) */
+    .player{position:fixed;inset:0;background:#000;z-index:40;display:flex;flex-direction:column}
+    .player iframe{flex:1;width:100%;border:0;background:#000}
+    .player .pbar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(6,9,15,.92),rgba(6,9,15,0));pointer-events:none}
+    .player .pbar .pb{pointer-events:auto;flex:1;background:rgba(20,26,40,.9);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:.7rem;font-size:.82rem;font-weight:700;cursor:pointer;backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;gap:.4rem}
+    .player .pb.primary{background:var(--grad);color:#0a0d14;border:0}
+    .player .ptitle{position:absolute;top:calc(8px + env(safe-area-inset-top));left:12px;right:12px;text-align:center;font-size:.8rem;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.7);pointer-events:none}
+
+    /* modal (settings / refine) */
+    .modal{position:fixed;inset:0;background:rgba(4,7,12,.72);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+    .sheet{background:linear-gradient(180deg,var(--surface),var(--elev));border:1px solid var(--border);border-bottom:0;border-radius:18px 18px 0 0;width:100%;max-width:560px;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+    .sheet h3{margin:.2rem 0 .5rem;font-size:1.05rem}
+    .sheet p{color:var(--muted);font-size:.86rem;margin:0 0 12px}
+    .sheet input,.sheet textarea{width:100%;font-size:1rem;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:.75rem .85rem}
+    .sheet .row{display:flex;gap:8px;margin-top:12px}
+    .sheet .row .btn{margin-top:0}
+    .grab{width:40px;height:4px;border-radius:2px;background:var(--surface3);margin:0 auto 12px}
+    .hint{font-size:.76rem;color:var(--dim);margin-top:8px}
+    a{color:var(--violet2)}
+    .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:.6rem 1rem;border-radius:var(--rp);font-size:.85rem;opacity:0;pointer-events:none;transition:.25s;z-index:80}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand"><span class="dot"></span>Unity<span>GUI</span></div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">⚙️</button>
+  </div>
+
+  <div class="wrap" id="home">
+    <div class="hero">
+      <span class="badge">● Free · No key · No install</span>
+      <h1>Make a game on your phone</h1>
+      <p>Describe a game and play it right here — powered by free AI.</p>
+    </div>
+
+    <textarea id="prompt" placeholder="Describe your game… e.g. a neon snake you steer by swiping, speeds up as you eat"></textarea>
+    <div class="chips" id="chips"></div>
+    <button class="btn btn-primary" id="gen-btn">✦ Generate &amp; play</button>
+    <div class="status" id="status"></div>
+
+    <div class="section-h">
+      <h2>Recent games</h2>
+      <button class="link" id="clear-recent">Clear</button>
+    </div>
+    <div class="recent" id="recent"></div>
+  </div>
+
+  <!-- Full-screen player -->
+  <div class="player hidden" id="player">
+    <div class="ptitle" id="ptitle"></div>
+    <iframe id="game-frame" sandbox="allow-scripts allow-pointer-lock allow-orientation-lock" title="Game"></iframe>
+    <div class="pbar">
+      <button class="pb" id="p-back">← Back</button>
+      <button class="pb" id="p-refine">✏️ Change</button>
+      <button class="pb" id="p-regen">🔁 Redo</button>
+      <button class="pb primary" id="p-restart">🔄 Restart</button>
+    </div>
+  </div>
+
+  <!-- Settings sheet -->
+  <div class="modal hidden" id="settings-modal">
+    <div class="sheet">
+      <div class="grab"></div>
+      <h3>Settings</h3>
+      <p>The app works with a <b>free, no-key AI</b> by default. For the most reliable results you can add your own free <b>Google Gemini</b> key (no credit card).</p>
+      <input id="gemini-key" type="password" placeholder="Optional: paste a free Gemini API key" autocomplete="off" />
+      <div class="hint">Get one free at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a>. It's stored only on this phone.</div>
+      <div class="row">
+        <button class="btn btn-ghost" id="settings-close">Close</button>
+        <button class="btn btn-primary" id="settings-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Refine sheet -->
+  <div class="modal hidden" id="refine-modal">
+    <div class="sheet">
+      <div class="grab"></div>
+      <h3>Change the game</h3>
+      <p>Tell the AI what to change — it rebuilds the whole game.</p>
+      <textarea id="refine-text" placeholder="e.g. make it faster, add enemies, bigger buttons, night theme"></textarea>
+      <div class="row">
+        <button class="btn btn-ghost" id="refine-cancel">Cancel</button>
+        <button class="btn btn-primary" id="refine-go">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const KEY_STORE = "ug_gemini_key";
+  const GAMES_STORE = "ug_mobile_games";
+
+  // ---- tiny helpers ----
+  function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2200); }
+  function setStatus(m,busy,err){ const s=$("#status"); s.innerHTML=(busy?'<span class="spinner"></span>':"")+(m||""); s.classList.toggle("err",!!err); }
+  function esc(s){ return String(s==null?"":s).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c])); }
+  function getKey(){ try{ return localStorage.getItem(KEY_STORE)||""; }catch{ return ""; } }
+  function loadGames(){ try{ return JSON.parse(localStorage.getItem(GAMES_STORE))||[]; }catch{ return []; } }
+  function saveGames(list){ try{ localStorage.setItem(GAMES_STORE, JSON.stringify(list.slice(0,24))); }catch{} }
+
+  // ---- genre quick-starts (touch-first) ----
+  const CHIPS = [
+    { icon:"🐍", label:"Snake", prompt:"A neon snake on a grid you steer by SWIPING (up/down/left/right); it grows and speeds up as it eats. Score and restart on crash." },
+    { icon:"🐤", label:"Flappy", prompt:"A one-tap flappy game: TAP anywhere to flap and fly through gaps in pipes. Score per pipe, day/night background, restart on crash." },
+    { icon:"🧱", label:"Breakout", prompt:"A brick-breaker: DRAG your finger to move the paddle, bounce the ball, clear all bricks. Lives, score, win screen." },
+    { icon:"🚀", label:"Space", prompt:"A vertical space shooter: DRAG to move your ship, it auto-fires at descending alien waves, dodge their bullets. Lives and score." },
+    { icon:"🏃", label:"Runner", prompt:"An endless runner: TAP to jump over obstacles (double-tap to double-jump). Distance score, speeds up over time, restart on hit." },
+    { icon:"🎯", label:"Tap dodge", prompt:"A fast arcade game where you DRAG a dot to dodge falling blocks; survive as long as possible, the longer you last the faster it gets." },
+    { icon:"🧩", label:"2048", prompt:"A 2048 sliding-tiles puzzle: SWIPE to combine matching numbers on a 4x4 grid. Score and best score, game over when full." },
+    { icon:"🥷", label:"Ninja", prompt:"A reaction game: shapes fly across the screen, TAP them before they leave. Combos, lives (miss = -1), rising speed." },
+  ];
+  function renderChips(){
+    $("#chips").innerHTML = CHIPS.map((c,i)=>`<button class="chip" data-i="${i}">${c.icon} ${esc(c.label)}</button>`).join("");
+    document.querySelectorAll("#chips .chip").forEach(b=>b.addEventListener("click",()=>{ $("#prompt").value = CHIPS[+b.dataset.i].prompt; $("#prompt").focus(); }));
+  }
+
+  // ---- system prompt (mobile, touch, must-run, no-blank) ----
+  const SYSTEM =
+    "You are an expert mobile HTML5 game developer. From the user's description you output a COMPLETE, PLAYABLE game as ONE self-contained HTML file that runs by simply opening it — no server, no build, no external files, CDNs, images, or fonts.\n\n" +
+    "RULES\n" +
+    "- A single HTML document with ALL CSS and JavaScript inline. Vanilla JS only.\n" +
+    "- MOBILE FIRST: the game fills the screen (100% width/height), works in PORTRAIT, and is controlled by TOUCH — tap, drag, and swipe. Add on-screen touch handling with touchstart/touchmove (call preventDefault) AND also support mouse/keyboard so it works on desktop too. Big, thumb-friendly touch targets.\n" +
+    "- MUST RUN WITH ZERO ERRORS: declare everything before use; get the canvas/context after the DOM is ready; never call a method on null.\n" +
+    "- MUST NOT BE BLANK: draw the first frame immediately on load and keep a requestAnimationFrame loop running every frame. The game must be visible right away — if you show a 'tap to start' overlay, still render the game world behind it.\n" +
+    "- Size the canvas to the window and REDRAW on resize (handle 'resize' and orientationchange).\n" +
+    "- PROCEDURAL ART: draw ALL graphics in code (canvas shapes/gradients) — no images. Real visual polish.\n" +
+    "- PROCEDURAL SOUND: synthesize short sound effects with the Web Audio API; create/resume the AudioContext on the first touch (never at load).\n" +
+    "- Include a start state, a game-over/restart (tappable), and an on-screen score/lives HUD. Complete, valid, runnable code — no TODOs, no placeholders.\n\n" +
+    "OUTPUT — respond with ONLY a single JSON object, no markdown or code fences, with EXACTLY these keys:\n" +
+    '  "game_name": string,\n  "summary": string,\n  "files": array with a SINGLE object { "path": "index.html", "content": string (the full HTML document) }';
+
+  function refinePrompt(prevHtml, change){
+    return "Here is the current game (one HTML file). Apply this change and return the FULL updated game as the same JSON shape (a single index.html file, complete):\n\nCHANGE: " + change + "\n\nCURRENT index.html:\n" + prevHtml;
+  }
+
+  // ---- free AI call (Pollinations no-key, then GET, then Gemini if key) ----
+  async function callAI(system, user){
+    // 1) Pollinations OpenAI-compatible POST
+    try{
+      const body = { model:"openai", messages:[{role:"system",content:system},{role:"user",content:user}], response_format:{type:"json_object"}, referrer:"unitygui" };
+      const res = await fetch("https://text.pollinations.ai/openai",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body) });
+      if(res.ok){ const t = await res.text(); let j=null; try{ j=JSON.parse(t); }catch{}
+        const c = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+        if(c) return c; if(!j && t.trim()) return t; }
+    }catch(e){}
+    // 2) Pollinations simple GET (short prompts only)
+    const payload = system + "\n\n" + user;
+    if(payload.length < 6000){
+      try{
+        const q = new URLSearchParams({ model:"openai", json:"true", referrer:"unitygui" });
+        const res = await fetch("https://text.pollinations.ai/" + encodeURIComponent(payload) + "?" + q.toString());
+        if(res.ok){ const t = await res.text(); if(t.trim()) return t; }
+      }catch(e){}
+    }
+    // 3) Gemini fallback if the user added a key
+    const key = getKey();
+    if(key){ return callGemini(key, system, user); }
+    throw new Error("Couldn't reach the free AI. Check your internet, or add a free Gemini key in ⚙️ Settings.");
+  }
+  async function callGemini(key, system, user){
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(key);
+    const body = { systemInstruction:{parts:[{text:system}]}, contents:[{role:"user",parts:[{text:user}]}], generationConfig:{ maxOutputTokens:20000, temperature:0.8, responseMimeType:"application/json" } };
+    const res = await fetch(url,{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body) });
+    if(!res.ok){ let m="Gemini error ("+res.status+")"; try{ const j=await res.json(); if(j.error&&j.error.message) m=j.error.message; }catch{} throw new Error(m); }
+    const j = await res.json();
+    const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+    const text = parts.map(p=>p.text||"").join("");
+    if(!text) throw new Error("Gemini returned nothing. Try again.");
+    return text;
+  }
+
+  // ---- parse + salvage the model output into playable HTML ----
+  function closeTruncated(s){
+    let inStr=false, esc=false; const stack=[];
+    for(let i=0;i<s.length;i++){ const c=s[i];
+      if(inStr){ if(esc)esc=false; else if(c==="\\")esc=true; else if(c==='"')inStr=false; continue; }
+      if(c==='"'){ inStr=true; continue; }
+      if(c==="{"||c==="[") stack.push(c); else if(c==="}"||c==="]") stack.pop();
+    }
+    let out=s; if(inStr){ if(esc)out=out.slice(0,-1); out+='"'; }
+    for(let i=stack.length-1;i>=0;i--) out += stack[i]==="{"?"}":"]";
+    return out;
+  }
+  function extractHtml(text){
+    let s = String(text||"").trim();
+    if(s.startsWith("```")){ const nl=s.indexOf("\n"); if(nl>=0)s=s.slice(nl+1); if(s.endsWith("```"))s=s.slice(0,-3); s=s.trim(); }
+    const a = s.indexOf("{"); const looksJson = a>=0;
+    let data=null;
+    if(looksJson){ const body=a>0?s.slice(a):s;
+      try{ data=JSON.parse(body); }catch{}
+      if(!data){ try{ data=JSON.parse(closeTruncated(body)); }catch{} }
+    }
+    const pull = (d)=>{
+      if(!d) return null;
+      if(Array.isArray(d.files)){
+        const f = d.files.find(f=>f&&/index\.html/i.test(f.path||f.name||"")) || d.files.find(f=>f&&/<(!doctype|html|canvas|script)/i.test(f.content||"")) || d.files[0];
+        return f && (typeof f==="string"?f:f.content);
+      }
+      if(d.files && typeof d.files==="object"){ const v=Object.values(d.files)[0]; return v && (typeof v==="string"?v:v.content); }
+      return d.html || d.code || d.content || null;
+    };
+    let html = data ? pull(data) : null;
+    if(!html && /<(!doctype|html|canvas|script)/i.test(text)) html = text; // raw HTML fallback
+    if(!html) throw new Error("The AI didn't return a playable game. Tap Redo to try again.");
+    return { name: (data && (data.game_name||data.name)) || "Game", html: String(html) };
+  }
+
+  // ---- generation flow ----
+  let current = null; // { name, html, prompt }
+  async function generate(userPrompt, opts){
+    opts = opts || {};
+    const btn = $("#gen-btn"); if(btn) btn.disabled = true;
+    setStatus(opts.refine ? "Rebuilding your game…" : "Building your game… this can take ~15s", true);
+    try{
+      const user = opts.refine ? refinePrompt(opts.baseHtml, userPrompt) : userPrompt;
+      let out;
+      try { out = extractHtml(await callAI(SYSTEM, user)); }
+      catch(e1){ // one retry with a firm reminder
+        const strict = user + "\n\nReturn ONLY the JSON object with a single index.html file whose content is the complete game. No prose, no fences.";
+        out = extractHtml(await callAI(SYSTEM, strict));
+      }
+      current = { name: out.name, html: out.html, prompt: opts.refine ? (current&&current.prompt||userPrompt) : userPrompt };
+      openPlayer(current);
+      persist(current);
+      setStatus("");
+    }catch(e){
+      setStatus(e.message || "Something went wrong. Try again.", false, true);
+      toast("Couldn't build it — try again");
+    }finally{ if(btn) btn.disabled = false; }
+  }
+
+  function persist(game){
+    const list = loadGames().filter(g=>g.html!==game.html);
+    list.unshift({ id:"g"+Date.now(), name:game.name, prompt:game.prompt, html:game.html, at:Date.now() });
+    saveGames(list); renderRecent();
+  }
+
+  // ---- player ----
+  function openPlayer(game){
+    $("#ptitle").textContent = game.name || "Game";
+    const frame = $("#game-frame");
+    frame.srcdoc = game.html;
+    $("#player").classList.remove("hidden");
+    try{ if(screen.orientation && screen.orientation.unlock) {} }catch{}
+  }
+  function closePlayer(){ $("#player").classList.add("hidden"); $("#game-frame").srcdoc = "about:blank"; }
+  function restartGame(){ if(current){ const f=$("#game-frame"); f.srcdoc = current.html; } }
+
+  // ---- recent games ----
+  const EMO = ["🎮","🕹️","👾","🚀","🐍","🐤","🧱","💎","🏎️","⚔️","🌈","🔥"];
+  function renderRecent(){
+    const list = loadGames(); const box = $("#recent");
+    if(!list.length){ box.innerHTML = '<div class="empty">No games yet — describe one above and tap Generate.</div>'; return; }
+    box.innerHTML = list.map((g,i)=>`
+      <div class="card" data-id="${g.id}">
+        <button class="del" data-del="${g.id}" aria-label="Delete">✕</button>
+        <div class="emoji">${EMO[i%EMO.length]}</div>
+        <div class="cname">${esc(g.name||"Game")}</div>
+        <div class="cmeta">${new Date(g.at).toLocaleDateString()}</div>
+      </div>`).join("");
+    box.querySelectorAll(".card").forEach(el=>el.addEventListener("click",e=>{
+      if(e.target.dataset.del) return;
+      const g = loadGames().find(x=>x.id===el.dataset.id); if(g){ current={name:g.name,html:g.html,prompt:g.prompt}; openPlayer(current); }
+    }));
+    box.querySelectorAll(".del").forEach(b=>b.addEventListener("click",()=>{
+      saveGames(loadGames().filter(x=>x.id!==b.dataset.del)); renderRecent();
+    }));
+  }
+
+  // ---- wire up ----
+  function init(){
+    renderChips(); renderRecent();
+    $("#gemini-key").value = getKey();
+    $("#gen-btn").addEventListener("click",()=>{ const p=$("#prompt").value.trim(); if(!p){ setStatus("Describe your game first (or tap a chip).",false,true); return; } generate(p); });
+    // player controls
+    $("#p-back").addEventListener("click",closePlayer);
+    $("#p-restart").addEventListener("click",restartGame);
+    $("#p-regen").addEventListener("click",()=>{ if(current) generate(current.prompt); });
+    $("#p-refine").addEventListener("click",()=>{ $("#refine-text").value=""; $("#refine-modal").classList.remove("hidden"); setTimeout(()=>$("#refine-text").focus(),50); });
+    // settings
+    $("#settings-btn").addEventListener("click",()=>$("#settings-modal").classList.remove("hidden"));
+    $("#settings-close").addEventListener("click",()=>$("#settings-modal").classList.add("hidden"));
+    $("#settings-save").addEventListener("click",()=>{ try{ const v=$("#gemini-key").value.trim(); if(v) localStorage.setItem(KEY_STORE,v); else localStorage.removeItem(KEY_STORE); }catch{} $("#settings-modal").classList.add("hidden"); toast("Saved ✓"); });
+    // refine
+    $("#refine-cancel").addEventListener("click",()=>$("#refine-modal").classList.add("hidden"));
+    $("#refine-go").addEventListener("click",()=>{ const c=$("#refine-text").value.trim(); if(!c){ toast("Type a change first"); return; } $("#refine-modal").classList.add("hidden"); generate(c,{refine:true, baseHtml: current&&current.html||""}); });
+    // tap backdrop to close sheets
+    document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{ if(e.target===m) m.classList.add("hidden"); }));
+    $("#clear-recent").addEventListener("click",()=>{ if(confirm("Clear all recent games on this phone?")){ saveGames([]); renderRecent(); } });
+    // service worker (offline replay + installable) — relative scope for GitHub Pages
+    if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
+  }
+  window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
