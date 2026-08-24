@@ -1,0 +1,15 @@
+{
+  "name": "UnityGUI — Make games on your phone",
+  "short_name": "UnityGUI",
+  "description": "Describe a game and play it on your phone — free, no key, no install.",
+  "start_url": "play.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0d14",
+  "theme_color": "#0a0d14",
+  "icons": [
+    { "src": "assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
