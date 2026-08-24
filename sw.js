@@ -3,10 +3,11 @@
    games (stored in localStorage) can be replayed offline. Generation itself
    needs the network. Cache-first for the shell; network passthrough for the
    free-AI API calls (never cached). */
-const CACHE = "unitygui-mobile-v1";
+const CACHE = "unitygui-mobile-v2";
 const SHELL = [
   "play.html",
   "manifest.webmanifest",
+  "js/mobile-templates.js",
   "assets/favicon.svg",
   "assets/logo.svg",
 ];

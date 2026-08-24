@@ -19,7 +19,7 @@ the **companion website**.
 
 | | What it is | Where |
 |---|---|---|
-| 📱 **Phone web app (PWA)** | **No PC, no install, no key.** Open it in your phone browser, describe a game, and **play it full-screen with touch** right there. Free hosted AI by default; installable to your home screen; recent games saved for offline replay. | [`play.html`](./play.html) · open on your phone |
+| 📱 **Phone web app (PWA)** | **No PC, no install, no key.** Open it in your phone browser, describe a game, and **play it full-screen with touch** right there. Free hosted AI by default; **⚡ instant games** (Snake · Flappy · Breakout) play offline with no wait; **⛶ fullscreen** + **📤 share** the game; installable to your home screen; recent games saved for offline replay. | [`play.html`](./play.html) · open on your phone |
 | 🖥️ **Desktop app (.exe)** | The easy path on Windows. Download from **Releases**, connect a free key once (or use the free no-key AI), then prompt → generate → it **auto-opens** a ready-to-run **Unity, Roblox _or_ Web** game (Unity launches the Editor; Web plays in-app). Chat to refine, attach a reference image. | [`desktop/`](./desktop/) · [Releases](https://github.com/servankrall/UnityGui/releases) |
 | 🎮 **Unity Editor plugin** | The most powerful path. `Window ▸ UnityGUI` generates a real `.unity` scene + prefabs + art **inside** your project. | [`unity/UnityGUI/`](./unity/UnityGUI/) |
 | 🌐 **Companion website** | Landing page + Google sign-in **console** (setup hub). Static, no build step. | repo root (`index.html`, `studio.html`) |
